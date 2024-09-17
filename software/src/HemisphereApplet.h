@@ -88,6 +88,7 @@ public:
 
     void BaseStart(const HEM_SIDE hemisphere_) {
         hemisphere = hemisphere_;
+        SetDisplaySide(hemisphere);
 
         // Initialize some things for startup
         cursor_countdown[hemisphere] = HEMISPHERE_CURSOR_TICKS;
@@ -194,6 +195,12 @@ public:
         if (!c) return 0;
         return (c <= ADC_CHANNEL_LAST) ? frame.inputs[c - 1] : frame.outputs[c - 1 - ADC_CHANNEL_LAST];
     }
+
+    #ifdef ARDUINO_TEENSY41
+    float InF(int ch) {
+        return static_cast<float>(In(ch)) / HEMISPHERE_MAX_INPUT_CV;
+    }
+    #endif
 
     // Apply small center detent to input, so it reads zero before a threshold
     int DetentedIn(int ch) {
@@ -343,6 +350,27 @@ public:
         graphics.print(num);
     }
 
+    void gfxPrint(int x, int y, float num, int digits) {
+        graphics.setPrintPos(x + gfx_offset, y);
+        gfxPrint(num, digits);
+    }
+
+    void gfxPrint(float num, int digits) {
+        int i = static_cast<int>(num);
+        float dec = num - i;
+        gfxPrint(i);
+        if (digits > 0) {
+            gfxPrint(".");
+            while (digits--) {
+                dec *= 10;
+                i = static_cast<int>(dec);
+                gfxPrint(i);
+                dec -= i;
+            }
+        }
+    }
+
+
     void gfxStartCursor(int x, int y) {
         gfxPos(x, y);
         gfxStartCursor();
@@ -429,7 +457,7 @@ public:
     }
 
     void gfxPrintIcon(const uint8_t *data, int16_t w = 8) {
-        gfxIcon(gfxGetPrintPosY(), gfxGetPrintPosX(), data);
+        gfxIcon(gfxGetPrintPosX(), gfxGetPrintPosY(), data);
         gfxPos(gfxGetPrintPosX() + w, gfxGetPrintPosY());
     }
 
@@ -468,9 +496,14 @@ public:
         if (EditMode() && is_cursor) gfxInvert(x-1, y, len+3, 8);
     }
 
+    void SetDisplaySide(HEM_SIDE side) {
+        gfx_offset = (side % 2) * 64;
+    }
+
 protected:
     HEM_SIDE hemisphere; // Which hemisphere (0, 1, ...) this applet uses
     bool isEditing = false; // modal editing toggle
+    int gfx_offset = 0;
     virtual void SetHelp() = 0;
 
     /* Forces applet's Start() method to run the next time the applet is selected. This

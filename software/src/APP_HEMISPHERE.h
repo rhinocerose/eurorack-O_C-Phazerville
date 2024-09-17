@@ -37,11 +37,11 @@
 #include "HSMIDI.h"
 #include "HSClockManager.h"
 
-#ifdef ARDUINO_TEENSY41
-#include "AudioSetup.h"
-#endif
-
 #include "hemisphere_config.h"
+
+#ifdef ARDUINO_TEENSY41
+#include "hemisphere_audio_config.h"
+#endif
 
 #ifdef ENABLE_APP_CALIBR8OR
 // We depend on Calibr8or to save quantizer settings
@@ -557,7 +557,7 @@ public:
 #ifdef ARDUINO_TEENSY41
         if (view_state == AUDIO_SETUP) {
           gfxHeader("Audio DSP Setup");
-          OC::AudioDSP::DrawAudioSetup();
+          // OC::AudioDSP::DrawAudioSetup();
           draw_applets = false;
         }
 #endif
@@ -635,7 +635,7 @@ public:
         }
 #ifdef ARDUINO_TEENSY41
         if (view_state == AUDIO_SETUP) {
-          if (!down) OC::AudioDSP::AudioSetupButtonAction(h);
+          // if (!down) OC::AudioDSP::AudioSetupButtonAction(h);
           return;
         }
 #endif
@@ -805,7 +805,7 @@ public:
         }
 #ifdef ARDUINO_TEENSY41
         if (view_state == AUDIO_SETUP) {
-          OC::AudioDSP::AudioMenuAdjust(h, event.value);
+          // OC::AudioDSP::AudioMenuAdjust(h, event.value);
           return;
         }
 #endif

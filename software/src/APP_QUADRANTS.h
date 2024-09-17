@@ -35,9 +35,9 @@
 #include "HSicons.h"
 #include "HSMIDI.h"
 #include "HSClockManager.h"
-#include "AudioSetup.h"
 
 #include "hemisphere_config.h"
+#include "hemisphere_audio_config.h"
 
 // We depend on Calibr8or now
 #include "APP_CALIBR8OR.h"
@@ -244,6 +244,8 @@ void QuadrantBeatSync();
 class QuadAppletManager : public HSApplication {
 public:
     void Start() {
+        audio_app.SetParentApp(this);
+        audio_app.Init();
 
         for (int i = 0; i < 4; ++i) {
             quant_scale[i] = OC::Scales::SCALE_SEMI;
@@ -258,6 +260,7 @@ public:
     }
 
     void Resume() {
+        audio_app.SetParentApp(this);
         if (!quad_active_preset)
             LoadFromPreset(0);
         // TODO: restore quantizer settings...
@@ -439,6 +442,7 @@ public:
             active_applet[h]->BaseController();
         }
         HS::clock_m.auto_reset = false;
+        audio_app.Controller();
     }
 
     void View() {
@@ -483,8 +487,10 @@ public:
 
         if (draw_applets) {
           if (view_state == AUDIO_SETUP) {
-            gfxHeader("Audio DSP Setup");
-            OC::AudioDSP::DrawAudioSetup();
+            audio_app.View();
+
+            // gfxHeader("Audio DSP Setup");
+            // OC::AudioDSP::DrawAudioSetup();
             draw_applets = false;
           }
         }
@@ -557,7 +563,8 @@ public:
           return;
         }
         if (view_state == AUDIO_SETUP) {
-          OC::AudioDSP::AudioSetupButtonAction(h);
+          // OC::AudioDSP::AudioSetupButtonAction(h);
+          // audio_app.HandleButtonEvent(event);
           return;
         }
         if (view_state == APPLET_FULLSCREEN) {
@@ -666,7 +673,8 @@ public:
             return;
         }
         if (view_state == AUDIO_SETUP) {
-          OC::AudioDSP::AudioMenuAdjust(h, event.value);
+          // OC::AudioDSP::AudioMenuAdjust(h, event.value);
+          audio_app.HandleEncoderEvent(event);
           return;
         }
 
@@ -784,6 +792,14 @@ public:
     }
 
     void HandleButtonEvent(const UI::Event &event) {
+        //serial_printf("mask=%d type=%d value=%d control=%d\n", event.mask, event.type, event.value, event.control);
+
+        if ((event.control == OC::CONTROL_BUTTON_L || event.control== OC::CONTROL_BUTTON_R)
+            && view_state == AUDIO_SETUP) {
+          // OC::AudioDSP::AudioSetupButtonAction(h);
+          audio_app.HandleEncoderButtonEvent(event);
+          return;
+        }
 
         switch (event.type) {
         case UI::EVENT_BUTTON_DOWN:
