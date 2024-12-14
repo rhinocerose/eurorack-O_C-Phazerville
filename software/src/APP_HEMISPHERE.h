@@ -75,10 +75,8 @@ enum HEMISPHERE_SETTINGS {
 
 #if defined(MOAR_PRESETS)
 static constexpr int HEM_NR_OF_PRESETS = 16;
-#elif defined(PEWPEWPEW)
-static constexpr int HEM_NR_OF_PRESETS = 8;
 #else
-static constexpr int HEM_NR_OF_PRESETS = 4;
+static constexpr int HEM_NR_OF_PRESETS = 8;
 #endif
 
 /* Hemisphere Preset
