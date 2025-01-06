@@ -84,9 +84,9 @@ void visualize_pitch_classes(uint8_t *normalized, weegfx::coord_t centerx, weegf
 void screensaver() {
   weegfx::coord_t x = 8;
   uint8_t y, width = 8;
-  for(int i = 0; i < 4; i++, x += 32 ) { 
-    y = DAC::value(i) >> 10; 
-    y++; 
+  for(int i = 0; i < 4; i++, x += 32 ) {
+    y = DAC::value(i) >> 10;
+    y++;
     graphics.drawRect(x, 64-y, width, width); // replace second 'width' with y for bars.
   }
 }
@@ -131,8 +131,8 @@ void scope_render() {
       graphics.setPixel(64 + x, 32 + averaged_scope_history[1][index]);
     } else {
       graphics.setPixel(x, 0 + averaged_scope_history[0][index]);
-      graphics.setPixel(64 + x, 0 + averaged_scope_history[1][index]);
-      graphics.setPixel(x, 32 + averaged_scope_history[2][index]);
+      graphics.setPixel(64 + x, 0 + averaged_scope_history[2][index]);
+      graphics.setPixel(x, 32 + averaged_scope_history[1][index]);
       graphics.setPixel(64 + x, 32 + averaged_scope_history[3][index]);
     }
   }
