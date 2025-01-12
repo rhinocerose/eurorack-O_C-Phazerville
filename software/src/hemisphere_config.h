@@ -91,6 +91,7 @@
 #include "applets/VectorMod.h"
 #include "applets/VectorMorph.h"
 #include "applets/Voltage.h"
+#include "applets/WTVCO.h"
 #include "applets/hMIDIIn.h"
 #include "applets/hMIDIOut.h"
 
@@ -136,7 +137,7 @@ AppletRegistry reg{
     DeclareApplet<BugCrack>{51, 0x80},
     DeclareApplet<Burst>{31, 0x04},
     DeclareApplet<Button>{65, 0x10},
-    DeclareApplet<Calculate>{12, 0x10},\
+    DeclareApplet<Calculate>{12, 0x10},
     DeclareApplet<Calibr8>{88, 0x10},
     DeclareApplet<Carpeggio>{32, 0x0a},
     DeclareApplet<Chordinator>{64, 0x08},
@@ -144,7 +145,7 @@ AppletRegistry reg{
     DeclareApplet<ClkToGate>{78, 0x04},
     DeclareApplet<ClockSkip>{28, 0x04},
     DeclareApplet<Compare>{30, 0x10},
-    DeclareApplet<Cumulus>{74, 0x40},
+    DeclareApplet<Cumulus>{5, 0x40},
     DeclareApplet<CVRecV2>{24, 0x02},
     DeclareApplet<DivSeq>{68, 0x06},
     DeclareApplet<DrLoFi>{16, 0x80},
@@ -200,6 +201,7 @@ AppletRegistry reg{
     DeclareApplet<VectorMod>{53, 0x01},
     DeclareApplet<VectorMorph>{54, 0x01},
     DeclareApplet<Voltage>{43, 0x10},
+    DeclareApplet<WTVCO>{67, 0x80},
 };
 
 
