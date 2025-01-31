@@ -261,6 +261,9 @@ public:
             quantizer[i].Configure(OC::Scales::GetScale(quant_scale[i]), 0xffff);
         }
 
+        showhide_cursor.Init(0, HEMISPHERE_AVAILABLE_APPLETS - 1);
+        showhide_cursor.Scroll(0);
+
         SetApplet(LEFT_HEMISPHERE, HS::get_applet_index_by_id(18)); // DualTM
         SetApplet(RIGHT_HEMISPHERE, HS::get_applet_index_by_id(15)); // EuclidX
     }

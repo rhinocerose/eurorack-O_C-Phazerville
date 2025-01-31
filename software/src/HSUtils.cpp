@@ -53,9 +53,6 @@ namespace HS {
 #ifdef ARDUINO_TEENSY41
     wavplayer_available = SD.begin(BUILTIN_SDCARD);
 #endif
-
-    showhide_cursor.Init(0, HEMISPHERE_AVAILABLE_APPLETS - 1);
-    showhide_cursor.Scroll(0);
   }
 
   void PokePopup(PopupType pop) {
