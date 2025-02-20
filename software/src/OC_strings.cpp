@@ -15,10 +15,8 @@ namespace OC {
 #else
   const char * const BUILD_TAG = "";
 #endif
-#ifdef NORTHERNLIGHT
-  const char * const NAME = "NLM cOC/hOC/2OC";
-  const char * const SHORT_NAME = "xOC";
-#elif defined(VOR)
+
+#if defined(VOR)
   const char * const NAME = "Plum Audio O_C+";
   const char * const SHORT_NAME = "OC+";
 #elif defined(__IMXRT1062__)
@@ -34,6 +32,15 @@ namespace OC {
     "PRESET SAVED!",
     "MYSTERIOUS ERROR",
   };
+
+#ifdef NORTHERNLIGHT
+  // legacy T3.2 builds
+  const char * const NAME_NLM = "NLM cOC/hOC/2OC";
+  const char * const SHORT_NAME_NLM = "xOC";
+#else
+  const char * const NAME_NLM = "NLM Xenomorpher";
+  const char * const SHORT_NAME_NLM = "XoC";
+#endif
 
   const char * const seq_playmodes[] = {" -", "SEQ+1", "SEQ+2", "SEQ+3", "TR+1", "TR+2", "TR+3", "ARP", "S+H#1", "S+H#2", "S+H#3", "S+H#4", "CV#1", "CV#2", "CV#3", "CV#4"};
 

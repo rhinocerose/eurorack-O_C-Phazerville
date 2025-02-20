@@ -5,6 +5,7 @@
 #include "OC_bitmaps.h"
 #include "OC_menus.h"
 #include "OC_DAC.h"
+#include "OC_gpio.h"
 #include "OC_options.h"
 #include "util/util_templates.h"
 
@@ -123,17 +124,17 @@ void scope_render() {
 
   for (weegfx::coord_t x = 0; x < (weegfx::coord_t)kScopeDepth - 1; ++x) {
     size_t index = (x + averaged_scope_tail + 1) % kScopeDepth;
-    #ifdef NORTHERNLIGHT
+    if (NorthernLightModular) {
       graphics.setPixel(x, 0 + averaged_scope_history[2][index]);
       graphics.setPixel(64 + x, 0 + averaged_scope_history[3][index]);
       graphics.setPixel(x, 32 + averaged_scope_history[0][index]);
       graphics.setPixel(64 + x, 32 + averaged_scope_history[1][index]);
-    #else
+    } else {
       graphics.setPixel(x, 0 + averaged_scope_history[0][index]);
       graphics.setPixel(64 + x, 0 + averaged_scope_history[1][index]);
       graphics.setPixel(x, 32 + averaged_scope_history[2][index]);
       graphics.setPixel(64 + x, 32 + averaged_scope_history[3][index]);
-    #endif
+    }
   }
 }
 

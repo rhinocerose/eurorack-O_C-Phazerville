@@ -38,7 +38,13 @@ bool calibration_data_loaded = false;
 const CalibrationData kCalibrationDefaults = {
   // DAC
   { {
-    #ifdef NORTHERNLIGHT 
+    #ifdef NORTHERNLIGHT
+#ifdef ARDUINO_TEENSY41
+    {197, 6634, 13083, 19517, 25966, 32417, 38850, 45301, 51733, 58180, 64400},
+    {197, 6634, 13083, 19517, 25966, 32417, 38850, 45301, 51733, 58180, 64400},
+    {197, 6634, 13083, 19517, 25966, 32417, 38850, 45301, 51733, 58180, 64400},
+    {197, 6634, 13083, 19517, 25966, 32417, 38850, 45301, 51733, 58180, 64400},
+#endif
     {197, 6634, 13083, 19517, 25966, 32417, 38850, 45301, 51733, 58180, 64400},
     {197, 6634, 13083, 19517, 25966, 32417, 38850, 45301, 51733, 58180, 64400},
     {197, 6634, 13083, 19517, 25966, 32417, 38850, 45301, 51733, 58180, 64400},
@@ -151,15 +157,28 @@ const CalibrationStep calibration_steps[CALIBRATION_STEP_LAST] = {
   #if defined(NORTHERNLIGHT) && !defined(IO_10V)
     { DAC_A_VOLT_3m, "DAC A 0.0 volts", "-> 0.000V ", default_help_r, default_footer, CALIBRATE_OCTAVE, 0, nullptr, 0, DAC::MAX_VALUE },
     { DAC_A_VOLT_5,  "DAC A 9.6 volts", "-> 9.600V ", long_press_hint, default_footer, CALIBRATE_OCTAVE, 8, nullptr, 0, DAC::MAX_VALUE },
-  
+
     { DAC_B_VOLT_3m, "DAC B 0.0 volts", "-> 0.000V ", default_help_r, default_footer, CALIBRATE_OCTAVE, 0, nullptr, 0, DAC::MAX_VALUE },
     { DAC_B_VOLT_5,  "DAC B 9.6 volts", "-> 9.600V ", long_press_hint, default_footer, CALIBRATE_OCTAVE, 8, nullptr, 0, DAC::MAX_VALUE },
-  
+
     { DAC_C_VOLT_3m, "DAC C 0.0 volts", "-> 0.000V ", default_help_r, default_footer, CALIBRATE_OCTAVE, 0, nullptr, 0, DAC::MAX_VALUE },
     { DAC_C_VOLT_5,  "DAC C 9.6 volts", "-> 9.600V ", long_press_hint, default_footer, CALIBRATE_OCTAVE, 8, nullptr, 0, DAC::MAX_VALUE },
-  
+
     { DAC_D_VOLT_3m, "DAC D 0.0 volts", "-> 0.000V ", default_help_r, default_footer, CALIBRATE_OCTAVE, 0, nullptr, 0, DAC::MAX_VALUE },
     { DAC_D_VOLT_5,  "DAC D 9.6 volts", "-> 9.600V ", long_press_hint, default_footer, CALIBRATE_OCTAVE, 8, nullptr, 0, DAC::MAX_VALUE },
+#ifdef ARDUINO_TEENSY41
+    { DAC_A_VOLT_3m, "DAC E 0.0 volts", "-> 0.000V ", default_help_r, default_footer, CALIBRATE_OCTAVE, 0, nullptr, 0, DAC::MAX_VALUE },
+    { DAC_A_VOLT_5,  "DAC E 9.6 volts", "-> 9.600V ", long_press_hint, default_footer, CALIBRATE_OCTAVE, 8, nullptr, 0, DAC::MAX_VALUE },
+
+    { DAC_B_VOLT_3m, "DAC F 0.0 volts", "-> 0.000V ", default_help_r, default_footer, CALIBRATE_OCTAVE, 0, nullptr, 0, DAC::MAX_VALUE },
+    { DAC_B_VOLT_5,  "DAC F 9.6 volts", "-> 9.600V ", long_press_hint, default_footer, CALIBRATE_OCTAVE, 8, nullptr, 0, DAC::MAX_VALUE },
+
+    { DAC_C_VOLT_3m, "DAC G 0.0 volts", "-> 0.000V ", default_help_r, default_footer, CALIBRATE_OCTAVE, 0, nullptr, 0, DAC::MAX_VALUE },
+    { DAC_C_VOLT_5,  "DAC G 9.6 volts", "-> 9.600V ", long_press_hint, default_footer, CALIBRATE_OCTAVE, 8, nullptr, 0, DAC::MAX_VALUE },
+
+    { DAC_D_VOLT_3m, "DAC H 0.0 volts", "-> 0.000V ", default_help_r, default_footer, CALIBRATE_OCTAVE, 0, nullptr, 0, DAC::MAX_VALUE },
+    { DAC_D_VOLT_5,  "DAC H 9.6 volts", "-> 9.600V ", long_press_hint, default_footer, CALIBRATE_OCTAVE, 8, nullptr, 0, DAC::MAX_VALUE },
+#endif
   #elif defined(IO_10V) && !defined(VOR)
     { DAC_A_VOLT_3m, "DAC A 0.0 volts", "-> 0.000V ", default_help_r, default_footer, CALIBRATE_OCTAVE, 0, nullptr, 0, DAC::MAX_VALUE },
     { DAC_A_VOLT_5,  "DAC A 8.0 volts", "-> 8.000V ", long_press_hint, default_footer, CALIBRATE_OCTAVE, 8, nullptr, 0, DAC::MAX_VALUE },

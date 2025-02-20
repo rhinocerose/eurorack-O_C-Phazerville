@@ -5,6 +5,7 @@
 #include "OC_config.h"
 #include "OC_core.h"
 #include "OC_debug.h"
+#include "OC_gpio.h"
 #include "OC_menus.h"
 #include "OC_ui.h"
 #include "OC_strings.h"
@@ -90,7 +91,7 @@ static void debug_menu_core() {
 static void debug_menu_version()
 {
   graphics.setPrintPos(2, 12);
-  graphics.print(Strings::NAME);
+  graphics.print(NorthernLightModular ? Strings::NAME_NLM : Strings::NAME);
   graphics.setPrintPos(2, 22);
   graphics.print(Strings::VERSION);
   graphics.setPrintPos(2, 32);

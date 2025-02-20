@@ -18,7 +18,6 @@ static inline void dac8568_raw_write(uint32_t data) {
   LPSPI4_TDR = data; // assume writes always at pace SPI FIFO can absorb
 }
 static inline void dac8568_set_channel(uint32_t channel, uint32_t data) {
-  data = 0xFFFF - data;
   dac8568_raw_write(0x03000000 | ((channel & 0x07) << 20) | ((data & 0xFFFF) << 4));
 }
 #endif
@@ -53,15 +52,11 @@ public:
   static constexpr size_t kHistoryDepth = 8;
   static constexpr uint16_t MAX_VALUE = 65535; // DAC fullscale 
 
-  #ifdef NORTHERNLIGHT
-    static constexpr int kOctaveZero = 0;
-  #elif defined(VOR) 
-    static int kOctaveZero;
+  static int kOctaveZero;
+  #if defined(VOR)
     static constexpr int VBiasUnipolar = 3900;   // onboard DAC @ Vref 1.2V (internal), 1.75x gain
     static constexpr int VBiasBipolar = 2000;    // onboard DAC @ Vref 1.2V (internal), 1.75x gain
     static constexpr int VBiasAsymmetric = 2760; // onboard DAC @ Vref 1.2V (internal), 1.75x gain
-  #else
-    static constexpr int kOctaveZero = 3;
   #endif
 
   struct CalibrationData {
@@ -233,14 +228,25 @@ public:
   static void Update() {
     #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
       if (DAC8568_Uses_SPI) {
-        dac8568_set_channel(0, values_[DAC_CHANNEL_A]);
-        dac8568_set_channel(1, values_[DAC_CHANNEL_B]);
-        dac8568_set_channel(2, values_[DAC_CHANNEL_C]);
-        dac8568_set_channel(3, values_[DAC_CHANNEL_D]);
-        dac8568_set_channel(4, values_[DAC_CHANNEL_E]);
-        dac8568_set_channel(5, values_[DAC_CHANNEL_F]);
-        dac8568_set_channel(6, values_[DAC_CHANNEL_G]);
-        dac8568_set_channel(7, values_[DAC_CHANNEL_H]);
+        if (NorthernLightModular) {
+          dac8568_set_channel(0, values_[DAC_CHANNEL_A]);
+          dac8568_set_channel(1, values_[DAC_CHANNEL_B]);
+          dac8568_set_channel(2, values_[DAC_CHANNEL_C]);
+          dac8568_set_channel(3, values_[DAC_CHANNEL_D]);
+          dac8568_set_channel(4, values_[DAC_CHANNEL_E]);
+          dac8568_set_channel(5, values_[DAC_CHANNEL_F]);
+          dac8568_set_channel(6, values_[DAC_CHANNEL_G]);
+          dac8568_set_channel(7, values_[DAC_CHANNEL_H]);
+        } else {
+          dac8568_set_channel(0, MAX_VALUE - values_[DAC_CHANNEL_A]);
+          dac8568_set_channel(1, MAX_VALUE - values_[DAC_CHANNEL_B]);
+          dac8568_set_channel(2, MAX_VALUE - values_[DAC_CHANNEL_C]);
+          dac8568_set_channel(3, MAX_VALUE - values_[DAC_CHANNEL_D]);
+          dac8568_set_channel(4, MAX_VALUE - values_[DAC_CHANNEL_E]);
+          dac8568_set_channel(5, MAX_VALUE - values_[DAC_CHANNEL_F]);
+          dac8568_set_channel(6, MAX_VALUE - values_[DAC_CHANNEL_G]);
+          dac8568_set_channel(7, MAX_VALUE - values_[DAC_CHANNEL_H]);
+        }
       } else {
     #endif
         set8565_CHA(values_[DAC_CHANNEL_A]);
