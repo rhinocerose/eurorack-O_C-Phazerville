@@ -16,17 +16,8 @@
 
 namespace OC {
 
-#if defined(NORTHERNLIGHT) || defined(VOR)
-static constexpr uint16_t DAC_OFFSET = 0;  // DAC offset, initial approx., ish (Easel card)
-#else
-static constexpr uint16_t DAC_OFFSET = 4890; // DAC offset, initial approx., ish --> -3.5V to 6V
-#endif
-
-#ifdef NORTHERNLIGHT
-  static constexpr uint16_t _ADC_OFFSET = (uint16_t)((float)pow(2,OC::ADC::kAdcResolution)*1.0f);       // ADC offset @3.3V
-#else
-  static constexpr uint16_t _ADC_OFFSET = (uint16_t)((float)pow(2,OC::ADC::kAdcResolution)*0.6666667f); // ADC offset @2.2V
-#endif
+static constexpr uint16_t _ADC_OFFSET_NLM = (uint16_t)((float)pow(2,OC::ADC::kAdcResolution)*1.0f);   // ADC offset @3.3V
+static constexpr uint16_t _ADC_OFFSET = (uint16_t)((float)pow(2,OC::ADC::kAdcResolution)*0.6666667f); // ADC offset @2.2V
 
 static constexpr unsigned kCalibrationAdcSmoothing = 4;
 
@@ -111,8 +102,6 @@ struct CalibrationState {
   const CalibrationStep *current_step;
   int encoder_value;
 
-  SmoothedValue<uint32_t, kCalibrationAdcSmoothing> adc_sum;
-
   uint16_t adc_1v;
   uint16_t adc_3v;
 
@@ -134,8 +123,8 @@ enum EncoderConfig : uint32_t {
 
 enum CalibrationFlags : uint32_t {
   CALIBRATION_FLAG_ENCODER_MASK = 0x3, // mask for the first two bits
-  CALIBRATION_FLAG_FLIP_MASK = 0xc, // mask
-  CALIBRATION_FLAG_FLIPSCREEN = 2, // bit index
+  CALIBRATION_FLAG_FLIP_MASK    = 0xc, // mask
+  CALIBRATION_FLAG_FLIPSCREEN   = 2, // bit index
   CALIBRATION_FLAG_FLIPCONTROLS = 3, // bit index
 };
 
@@ -165,6 +154,12 @@ struct CalibrationData {
   uint32_t flipmode() const {
     return (flags & CALIBRATION_FLAG_FLIP_MASK) >> CALIBRATION_FLAG_FLIPSCREEN;
   }
+  // default behavior - flip both screen and I/O
+  void toggle_flipmode() {
+    flags = (flags & ~CALIBRATION_FLAG_FLIP_MASK) |
+      ((flags & CALIBRATION_FLAG_FLIP_MASK) ? 0 : CALIBRATION_FLAG_FLIP_MASK);
+  }
+  // flip both bits independently
   void cycle_flipmode() {
     flags = (flags & ~CALIBRATION_FLAG_FLIP_MASK) |
       ( ((flags & CALIBRATION_FLAG_FLIP_MASK) + (1 << CALIBRATION_FLAG_FLIPSCREEN))
@@ -176,7 +171,7 @@ struct CalibrationData {
     return flipscreen();
   }
   EncoderConfig encoder_config() const {
-  	return static_cast<EncoderConfig>(flags & CALIBRATION_FLAG_ENCODER_MASK);
+    return static_cast<EncoderConfig>(flags & CALIBRATION_FLAG_ENCODER_MASK);
   }
 
   EncoderConfig next_encoder_config() {
@@ -206,10 +201,7 @@ extern bool calibration_data_loaded;
 
 void calibration_load();
 void calibration_save();
-void calibration_update(CalibrationState &state);
 void calibration_reset();
-void calibration_draw(const CalibrationState &state);
-
 
 }; // namespace OC
 
