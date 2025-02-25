@@ -62,6 +62,7 @@ If you're coming from any of the other Hemisphere forks, note that many of the a
 * [Carpeggio](Carpeggio) - X-Y table of pitches from a scale/chord
 * [Chordinate](Chordinate) - Quantizer with scale mask, outputs root + scale degree (from qiemem)
 * [ClockDivider](ClockDivider) - Dual complex clock pulse multiplier / divider.
+* [Clk2Gate](Clk2Gate) - Variable-length gate generator
 * [ClockSkip](Clock-Skipper) - Randomly skip pulses
 * [Compare](Compare) - Basic comparator
 * [Cumulus](Cumulus) - Bit accumulator, inspired by Schlappi Nibbler
