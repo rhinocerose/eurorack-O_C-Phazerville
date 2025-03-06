@@ -118,6 +118,7 @@ public:
       }
     }
     void View() {
+      hemisphere = HS::GLOBAL_CURSOR;
       if (OC::CORE::ticks - view_tick > 1000) {
         slide_anim = SLIDEOUT_TIME;
       }

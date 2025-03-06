@@ -87,7 +87,6 @@ public:
         // Paused means wait for clock-sync to start
         if (HS::clock_m.IsPaused() && clock_sync)
             HS::clock_m.Start();
-        // TODO: automatically stop...
 
         // Advance internal clock, sync to external clock / reset
         if (HS::clock_m.IsRunning())
@@ -129,6 +128,7 @@ public:
       }
     }
     void View() {
+      hemisphere = HS::GLOBAL_CURSOR;
       if (OC::CORE::ticks - view_tick > 1000) {
         slide_anim = SLIDEOUT_TIME;
       }
