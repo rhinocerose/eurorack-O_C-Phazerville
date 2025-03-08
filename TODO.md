@@ -2,9 +2,13 @@ TODO (Roadmap)
 ===
 
 # v1.9
-* Config files on LittleFS / SD for T4.x
-* Unipolar variant of SequenceX?
 * T4.1 - expand to 8 channels: Piqued, Quadraturia, Captain MIDI
+* Audio Applets for T4.1
+  - add a basic filter to Osc
+  - multi-mode (HP, BP, LP) for Filt/Fold
+  - 3-band EQ / multi-band dynamics
+* MIDI mapping for param modulation sources
+* Config option for LFS vs. SD for preset storage
 
 # v2.0
 * **Fully merge "abandoned/refactoring" branch from pld**
@@ -12,14 +16,12 @@ TODO (Roadmap)
 * Auto-tuner with floor/ceiling detection (fail gracefully)
 * generalized AppletParams for flexible assignment, extra virtual I/O
   - MIDI Learn for anything
-* Audio Applets for T4.1
 * Integrate Calibr8or with DAC for global tracking adjustments
 
 # ???
 * Update Boilerplates - I just assume this needs attention
 * MORE MIDI STUFF:
     - MIDI looper applet!
-    - better Polyphonic MIDI input tracking
     - MIDI output for all apps?
     - Implement some MIDI SysEx commands, sheesh
     - WebMIDI interface
@@ -29,6 +31,10 @@ TODO (Roadmap)
 * Snake Game
 
 # [DONE]
+* Quadrants Preset Bank switching
+* Config files on LittleFS / SD for T4.x
+* Unipolar randomize in SequenceX
+* better Polyphonic MIDI input tracking
 * Multipliers in DivSeq (maybe a separate applet)
 * Runtime filtering/hiding of Applets
 * QUADRANTS
