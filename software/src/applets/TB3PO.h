@@ -187,6 +187,9 @@ class TB_3PO: public HemisphereApplet {
     if (cursor == QSELECT) {
       HS::QuantizerEdit(qselect);
     }
+    if (cursor == LENGTH) {
+      no_slides ^= 1;
+    }
     CancelEdit();
   }
 
@@ -309,6 +312,7 @@ private:
 
   // bool 
   int lock_seed; // If 1, the seed won't randomize (and manual editing is enabled)
+  bool no_slides = false;
 
   uint16_t seed; // The random seed that deterministically builds the sequence
 
@@ -549,6 +553,7 @@ private:
   }
 
   bool step_is_slid(int step_num) {
+    if (no_slides) return false;
     return (slides & (0x01 << step_num));
   }
 
@@ -712,8 +717,11 @@ private:
       gfxPrint(37, 46, "!");
     }
 
-    if (step_is_slid(step)) {
+    if (step_is_slid(step) || no_slides) {
       gfxBitmap(42, 46, 8, BEND_ICON);
+    }
+    if (no_slides) {
+      gfxPrint(42, 46, "X");
     }
 
     // Show that the "slide circuit" is actively
@@ -740,7 +748,7 @@ private:
       gfxSpicyCursor(44, 39, 13);
       break;
     case LENGTH:
-      gfxCursor(20, 54, 12, 8);
+      gfxSpicyCursor(20, 54, 12, 8);
       break;
     }
   }
