@@ -540,7 +540,7 @@ public:
                   else
                     LoadFromPreset(slot);
                 }
-                continue;
+                //continue;
             }
 
             f.MIDIState.ProcessMIDIMsg(device.getChannel(), message, data1, data2);
