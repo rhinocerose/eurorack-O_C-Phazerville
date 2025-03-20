@@ -694,10 +694,11 @@ struct IOFrame {
     // TODO: Hardware IO should be extracted
     // --- Hard IO ---
     void Load() {
-        clocked[0] = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>();
-        clocked[1] = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_2>();
-        clocked[2] = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_3>();
-        clocked[3] = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_4>();
+        bool clocktmp[OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_LAST];
+        clocktmp[0] = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>();
+        clocktmp[1] = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_2>();
+        clocktmp[2] = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_3>();
+        clocktmp[3] = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_4>();
         gate_high[0] = OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_1>();
         gate_high[1] = OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_2>();
         gate_high[2] = OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_3>();
@@ -708,7 +709,7 @@ struct IOFrame {
 
             // calculate gates/clocks for all ADC inputs as well
             gate_high[OC::DIGITAL_INPUT_LAST + i] = inputs[i] > GATE_THRESHOLD;
-            clocked[OC::DIGITAL_INPUT_LAST + i] = (gate_high[OC::DIGITAL_INPUT_LAST + i] && last_cv[i] < GATE_THRESHOLD);
+            clocktmp[OC::DIGITAL_INPUT_LAST + i] = (gate_high[OC::DIGITAL_INPUT_LAST + i] && last_cv[i] < GATE_THRESHOLD);
 
             if (abs(inputs[i] - last_cv[i]) > HEMISPHERE_CHANGE_THRESHOLD) {
                 changed_cv[i] = 1;
@@ -719,6 +720,38 @@ struct IOFrame {
             if (clock_countdown[i] > 0) {
                 if (--clock_countdown[i] == 0) outputs[i] = 0;
             }
+        }
+
+        // pre-calculate clock triggers
+        static constexpr int offset = OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_LAST;
+        for (int ch = 0; ch < APPLET_SLOTS * 2; ++ch) {
+          bool result = 0;
+          const size_t virt_chan = (ch) % (APPLET_SLOTS * 2);
+          const int trmap = trigger_mapping[ch];
+
+          // clock triggers
+          if (clock_m.IsRunning() && clock_m.GetMultiply(virt_chan) != 0)
+              result = clock_m.Tock(virt_chan);
+          else if (trmap > 0) {
+            if (trmap <= offset)
+              result = clocktmp[ trmap - 1 ];
+            else {
+              result = clockout_q[ trmap - 1 - offset ];
+            }
+          }
+
+          // Try to eat a boop
+          result = result || clock_m.Beep(virt_chan);
+
+          if (result) {
+              cycle_ticks[ch] = OC::CORE::ticks - last_clock[ch];
+              last_clock[ch] = OC::CORE::ticks;
+          }
+
+          clocked[ch] = result;
+        }
+        for (int i = 0; i < DAC_CHANNEL_LAST; ++i) {
+          clockout_q[i] = false;
         }
     }
 

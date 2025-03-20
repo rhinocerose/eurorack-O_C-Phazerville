@@ -32,36 +32,5 @@ void HemisphereApplet::BaseView(bool full_screen, bool parked) {
  * It modifies state by eating boops and updating cycle_ticks. -NJM
  */
 bool HemisphereApplet::Clock(int ch, bool physical) {
-    bool clocked = 0;
-    bool useTock = (!physical && HS::clock_m.IsRunning());
-
-#ifdef ARDUINO_TEENSY41
-    const size_t virt_chan = (ch + io_offset) % 8;
-#else
-    const size_t virt_chan = (ch + io_offset) % 4;
-#endif
-
-    const int trmap = trigger_mapping[ch + io_offset];
-    const int offset = OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_LAST;
-
-    // clock triggers
-    if (useTock && HS::clock_m.GetMultiply(virt_chan) != 0)
-        clocked = HS::clock_m.Tock(virt_chan);
-    else if (trmap > 0) {
-      if (trmap <= offset)
-        clocked = frame.clocked[ trmap - 1 ];
-      else {
-        clocked = frame.clockout_q[ trmap - 1 - offset ];
-        frame.clockout_q[ trmap - 1 - offset ] = false;
-      }
-    }
-
-    // Try to eat a boop
-    clocked = clocked || clock_m.Beep(virt_chan);
-
-    if (clocked) {
-        frame.cycle_ticks[io_offset + ch] = OC::CORE::ticks - frame.last_clock[io_offset + ch];
-        frame.last_clock[io_offset + ch] = OC::CORE::ticks;
-    }
-    return clocked;
+  return frame.clocked[ch + io_offset];
 }
