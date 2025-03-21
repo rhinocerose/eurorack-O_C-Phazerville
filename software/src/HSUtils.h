@@ -151,6 +151,7 @@ void gfxPrint(const char *str);
 void gfxPrint(int num);
 void gfxPrint(int x_adv, int num);
 void gfxPrintVoltage(int cv);
+void gfxPrintFreqFromPitch(int16_t pitch);
 void gfxPixel(int x, int y);
 void gfxFrame(int x, int y, int w, int h, bool dotted = false);
 void gfxRect(int x, int y, int w, int h);
