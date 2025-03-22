@@ -74,6 +74,14 @@ public:
     static const char* help[HELP_LABEL_COUNT];
     static EncoderEditor enc_edit[APPLET_SLOTS + 1];
 
+    static void ProcessCursors() {
+      // Cursor countdowns. See CursorBlink(), ResetCursor(), gfxCursor()
+      for (int i = 0; i < APPLET_SLOTS + 1; ++i) {
+        if (--cursor_countdown[i] < -HEMISPHERE_CURSOR_TICKS)
+          cursor_countdown[i] = HEMISPHERE_CURSOR_TICKS;
+      }
+    }
+
     virtual const char* applet_name() = 0; // Maximum of 9 characters
     virtual const uint8_t* applet_icon() { return ZAP_ICON; }
     const char* const OutputLabel(int ch) {
@@ -89,8 +97,6 @@ public:
     virtual void OnButtonPress() { CursorToggle(); };
     virtual void OnEncoderMove(int direction) = 0;
 
-    //void BaseStart(const HEM_SIDE hemisphere_);
-    void BaseController();
     void BaseView(bool full_screen = false, bool parked = true);
 
     void BaseStart(const HEM_SIDE hemisphere_) {

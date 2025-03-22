@@ -565,10 +565,11 @@ public:
             if (HS::clock_m.auto_reset)
                 active_applet[h]->Reset();
 
-            active_applet[h]->BaseController();
+            active_applet[h]->Controller();
         }
         HS::clock_m.auto_reset = false;
         audio_app.Controller();
+        HemisphereApplet::ProcessCursors();
     }
 
     void DrawFullScreen() {

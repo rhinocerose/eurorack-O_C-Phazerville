@@ -9,17 +9,6 @@ int16_t HemisphereApplet::cursor_start_y;
 const char* HemisphereApplet::help[HELP_LABEL_COUNT];
 HS::EncoderEditor HemisphereApplet::enc_edit[APPLET_SLOTS + 1];
 
-void HemisphereApplet::BaseController() {
-    // I moved the IO-related stuff to the parent HemisphereManager app.
-    // The IOFrame gets loaded before calling Controllers, and outputs are handled after.
-    // -NJM
-
-    // Cursor countdowns. See CursorBlink(), ResetCursor(), gfxCursor()
-    if (--cursor_countdown[hemisphere] < -HEMISPHERE_CURSOR_TICKS) cursor_countdown[hemisphere] = HEMISPHERE_CURSOR_TICKS;
-
-    Controller();
-}
-
 void HemisphereApplet::BaseView(bool full_screen, bool parked) {
     //if (HS::select_mode == hemisphere)
     gfxHeader(applet_name(), (HS::ALWAYS_SHOW_ICONS || full_screen) ? applet_icon() : nullptr);

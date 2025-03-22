@@ -619,7 +619,7 @@ public:
             if (HS::clock_m.auto_reset)
                 HS::available_applets[index].instance[h]->Reset();
 
-            HS::available_applets[index].instance[h]->BaseController();
+            HS::available_applets[index].instance[h]->Controller();
         }
         HS::clock_m.auto_reset = false;
 
@@ -633,6 +633,7 @@ public:
           }
         }
 #endif
+        HemisphereApplet::ProcessCursors();
     }
 
     void View() {
