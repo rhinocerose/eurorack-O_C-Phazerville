@@ -526,7 +526,7 @@ public:
       }
     }
 
-    if (triggered && get_euclidean_length() && !EuclideanFilter(euclidean_length, euclidean_fill, euclidean_offset, euclidean_counter_)) {
+    if (triggered && get_euclidean_length() && !EuclideanFilter(euclidean_length + 1, euclidean_fill, euclidean_offset, euclidean_counter_)) {
       triggered = false;
     }
 
