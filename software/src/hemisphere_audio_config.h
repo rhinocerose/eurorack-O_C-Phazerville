@@ -16,7 +16,7 @@
 
 const size_t NUM_SLOTS = 5;
 
-DMAMEM std::tuple<InputApplet<MONO>, UpsampledApplet<MONO>, OscApplet>
+DMAMEM std::tuple<InputApplet<MONO>, UpsampledApplet<MONO>, OscApplet, WavPlayerApplet<MONO>>
   mono_input_pool[2];
 DMAMEM std::
   tuple<InputApplet<STEREO>, WavPlayerApplet<STEREO>, UpsampledApplet<STEREO>>
