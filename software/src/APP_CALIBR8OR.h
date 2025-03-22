@@ -633,28 +633,29 @@ public:
     void DrawTabs() {
         // Draw channel tabs
         const size_t w = 128 / DAC_CHANNEL_LAST;
+        const size_t y = 11;
         for (int i = 0; i < DAC_CHANNEL_LAST; ++i) {
           const size_t x = i * w;
-            gfxLine(x, 12, x, 22); // vertical line on left
+            gfxLine(x, y, x, y+10); // vertical line on left
 
             const size_t center_x = x + w/2 - 3;
             switch (channel[i].clocked_mode) {
               case CONTINUOUS:
-                gfxPrint(center_x, 14, i+1);
+                gfxPrint(center_x, y+2, i+1);
                 break;
               case TRIG_TRANS:
-                gfxIcon(center_x, 14, CLOCK_ICON);
+                gfxIcon(center_x, y+2, CLOCK_ICON);
                 break;
               case SAMPLE_AND_HOLD:
-                gfxIcon(center_x, 14, STAIRS_ICON);
+                gfxIcon(center_x, y+2, STAIRS_ICON);
                 break;
             }
 
             if (i == sel_chan)
-                gfxInvert(1 + x, 12, w - 1, 11);
+                gfxInvert(1 + x, y, w - 1, 11);
         }
-        gfxLine(127, 12, 127, 22); // vertical line
-        gfxLine(0, 23, 127, 23);
+        gfxLine(127, y, 127, y+10); // vertical line
+        gfxLine(0, y+11, 127, y+11);
     }
     void DrawInterface() {
         DrawTabs();
