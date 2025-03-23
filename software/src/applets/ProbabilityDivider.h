@@ -51,12 +51,11 @@ public:
         }
     }
     void Unload() {
-        loop_linker->SetLooping(0);
+        loop_linker.UnloadDiv(hemisphere);
     };
 
     void Controller() {
-        loop_linker->RegisterDiv(hemisphere);
-
+        loop_linker.RegisterDiv(hemisphere);
         // CV 1 control over loop length
         loop_length_mod = loop_length;
         if (DetentedIn(0)) {
@@ -64,7 +63,7 @@ public:
             // TODO: regenerate if changing from 0?
         }
 
-        loop_linker->SetLooping(loop_length_mod > 0);
+        loop_linker.SetLooping(loop_length_mod > 0);
 
         // reset
         if (Clock(1)) {
@@ -79,7 +78,7 @@ public:
             // trigger reseed if CV2 is > 2.5v
             if (reseed > (HEMISPHERE_MAX_CV >> 1) && !reseed_high) {
                 GenerateLoop(false);
-                loop_linker->Reseed();
+                loop_linker.Reseed();
                 reseed_high = true;
                 reseed_animation = HEMISPHERE_PULSE_ANIMATION_TIME_LONG;
             }
@@ -96,7 +95,7 @@ public:
                 reset_animation = HEMISPHERE_PULSE_ANIMATION_TIME_LONG;
             } 
 
-            loop_linker->SetLoopStep(loop_index);
+            loop_linker.SetLoopStep(loop_index);
 
             // continue with active division
             if (--skip_steps > 0) {
@@ -104,7 +103,7 @@ public:
                     loop_step++;
                 }
                 ClockOut(1);
-                loop_linker->Trigger(1);
+                loop_linker.Trigger(1);
                 return;
             }
 
@@ -121,7 +120,7 @@ public:
             }
 
             ClockOut(0);
-            loop_linker->Trigger(0);
+            loop_linker.Trigger(0);
             pulse_animation = HEMISPHERE_PULSE_ANIMATION_TIME;
         }
 
@@ -226,7 +225,7 @@ private:
     int reseed_animation = 0;
     int reset_animation = 0;
 
-    ProbLoopLinker *loop_linker = loop_linker->get();
+    ProbLoopLinker &loop_linker = ProbLoopLinker::get();
 
     // pointer arrays that make loops easier
     const int *weights[4] = {&weight_1, &weight_2, &weight_4, &weight_8};

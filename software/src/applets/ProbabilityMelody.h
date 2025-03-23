@@ -88,9 +88,12 @@ public:
         pitch[0] = 0;
         pitch[1] = 0;
     }
+    void Unload() {
+        loop_linker.UnloadMelo(hemisphere);
+    }
 
     void Controller() {
-        loop_linker->RegisterMelo(hemisphere);
+        loop_linker.RegisterMelo(hemisphere);
 
         // stash these to check for regen
         int oldDown = down_mod;
@@ -105,11 +108,11 @@ public:
         up_mod = constrain(up + semitone_cv_in(cvm & 0b11), down_mod, HEM_PROB_MEL_MAX_RANGE);
 
         // regen when looping was enabled from ProbDiv
-        bool regen = loop_linker->IsLooping() && !isLooping;
-        isLooping = loop_linker->IsLooping();
+        bool regen = loop_linker.IsLooping() && !isLooping;
+        isLooping = loop_linker.IsLooping();
 
         // reseed from ProbDiv
-        regen = regen || loop_linker->ShouldReseed();
+        regen = regen || loop_linker.ShouldReseed();
 
         // reseed loop if range has changed due to CV
         regen = regen || (isLooping && (down_mod != oldDown || up_mod != oldUp));
@@ -120,9 +123,9 @@ public:
 
         ForEachChannel(ch) {
             if (Clock(ch)) StartADCLag(ch);
-            if (loop_linker->TrigPop(ch) || EndOfADCLag(ch)) {
+            if (loop_linker.TrigPop(ch) || EndOfADCLag(ch)) {
                 if (isLooping) {
-                    pitch[ch] = seqloop[ch][loop_linker->GetLoopStep()] + 60;
+                    pitch[ch] = seqloop[ch][loop_linker.GetLoopStep()] + 60;
                 } else {
                     pitch[ch] = GetNextWeightedPitch() + 60;
                 }
@@ -225,7 +228,7 @@ private:
     int8_t rotation[2] = {0};
     int8_t cv_mode = 0;
 
-    ProbLoopLinker *loop_linker = loop_linker->get();
+    ProbLoopLinker &loop_linker = ProbLoopLinker::get();
 
     int value_animation = 0;
     static constexpr uint8_t x[12] = {2, 7, 10, 15, 18, 26, 31, 34, 39, 42, 47, 50};
