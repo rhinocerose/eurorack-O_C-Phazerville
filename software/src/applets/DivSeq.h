@@ -64,16 +64,18 @@ public:
         return divmult[idx].steps != 0 && !Muted(idx);
       }
       bool Poke(bool clocked = 0) {
-        bool trigout = false;
-        // reset case
-        if (clocked && step_index < 0) {
-            step_index = 0;
-            divmult[step_index].last_clock = last_clock;
-            last_clock = OC::CORE::ticks;
-            return divmult[step_index].Tick(true) && StepActive(step_index);
+        if (step_index < 0) {
+          // reset case
+          if (clocked) {
+              step_index = 0;
+              divmult[step_index].last_clock = last_clock;
+              last_clock = OC::CORE::ticks;
+              return divmult[step_index].Tick(true) && StepActive(step_index);
+          }
+          return false; // reset and not ready
         }
 
-        trigout = divmult[step_index].Tick(clocked);
+        bool trigout = divmult[step_index].Tick(clocked);
 
         if (clocked)
         {
