@@ -21,7 +21,6 @@
 
 /* Used ProbDiv applet from benirose as a template */
 
-#include "../HSProbLoopLinker.h" // singleton for linking ProbDiv and ProbMelo
 #include "../util/clkdivmult.h"
 
 class DivSeq : public HemisphereApplet {
@@ -138,13 +137,10 @@ public:
     }
     void TrigOut(int ch) {
         ClockOut(ch);
-        loop_linker->Trigger(ch);
         pulse_animation[ch] = HEMISPHERE_PULSE_ANIMATION_TIME;
     }
 
     void Controller() {
-        loop_linker->RegisterDiv(hemisphere);
-
         // reset
         if (Clock(1)) {
             Reset();
@@ -275,8 +271,6 @@ private:
     int cursor; // DivSeqCursor 
 
     int pulse_animation[2] = {0,0};
-
-    ProbLoopLinker *loop_linker = loop_linker->get();
 
     void DrawInterface() {
       if (RE_ZAP == cursor) {
