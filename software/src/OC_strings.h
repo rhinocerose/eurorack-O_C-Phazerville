@@ -10,6 +10,7 @@ namespace OC {
   static const int kNumDelayTimes = 8;
 
   namespace Strings {
+    extern const char * const RELEASE_NAME;
     extern const char * const NAME;
     extern const char * const SHORT_NAME;
     extern const char * const NAME_NLM;

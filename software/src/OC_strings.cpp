@@ -16,11 +16,19 @@ namespace OC {
   const char * const BUILD_TAG = "";
 #endif
 
+  // 17 char width                  |                 |
+  const char * const RELEASE_NAME = "Phazerville Suite";
+  // TODO: array of alternate titles, one for every letter of the alphabet
+
 #if defined(VOR)
   const char * const NAME = "Plum Audio O_C+";
   const char * const SHORT_NAME = "OC+";
+#elif defined(ARDUINO_TEENSY41)
+  const char * const NAME = "O.R.N.8";
+  const char * const SHORT_NAME = "oC8";
+  // TODO: array of vendor names, hardware variants
 #elif defined(__IMXRT1062__)
-  const char * const NAME = "O_C T4.x";
+  const char * const NAME = "O_C T4.0";
   const char * const SHORT_NAME = "o_C";
 #else
   const char * const NAME = "Ornaments & Crimes";

@@ -268,7 +268,7 @@ public:
       #ifdef PEWPEWPEW
       gfxPrint(21, 15, "PEW! PEW! PEW!");
       #else
-      gfxPrint(12, 15, "Phazerville Suite");
+      gfxPrint(12, 15, OC::Strings::RELEASE_NAME);
       #endif
       gfxIcon(0, 25, PhzIcons::full_book);
       gfxPrint(10, 25, OC::Strings::VERSION);
