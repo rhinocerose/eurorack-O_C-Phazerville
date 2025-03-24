@@ -149,12 +149,6 @@ public:
                 break;
             case hMIDIIn_LOG_VIEW:
             default:
-                if (!EditMode()) {
-                    MoveCursor(cursor, direction, 1);
-                    return;
-                }
-                if (cursor == 0) io_page = constrain(io_page + direction, 0, hMIDIIn_CURSOR_LAST);
-                else return;
                 break;
         }
         ResetCursor();
