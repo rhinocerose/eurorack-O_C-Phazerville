@@ -7,6 +7,7 @@
 #ifdef __IMXRT1062__
 #include "PhzConfig.h"
 #include "HSUtils.h"
+#include "util/util_misc.h"
 
 namespace PhzConfig {
 
@@ -25,18 +26,20 @@ void setup()
 {
   // This mounts or creates a LittleFS drive in Teensy PCB Flash.
   if (!myfs.begin(diskSize)) {
-    Serial.println("LittleFS unavailable!! Settings WILL NOT BE SAVED!");
+    SERIAL_PRINTLN("LittleFS unavailable!! Settings WILL NOT BE SAVED!");
     return;
   }
-  Serial.println("LittleFS initialized.");
+  SERIAL_PRINTLN("LittleFS initialized.");
 
+  /*
   if (myfs.mediaPresent()) {
     listFiles(myfs);
     //load_config();
   }
+  */
 
   if (HS::wavplayer_available) {
-    Serial.println("SD card available for preset storage");
+    SERIAL_PRINTLN("SD card available for preset storage");
     //listFiles(SD);
   }
 }
@@ -62,8 +65,7 @@ bool getValue(KEY key, VALUE &value)
 
 bool save_config(const char* filename, FS &fs)
 {
-    Serial.println("\nSaving Config!!!");
-    Serial.printf("\nSaving Config: %s\n", filename);
+    SERIAL_PRINTLN("\nSaving Config: %s\n", filename);
 
     const char* const TEMPFILE = "PEWPEW.TMP";
     bool success = true;
@@ -93,7 +95,7 @@ bool save_config(const char* filename, FS &fs)
                     dataFile.write((const uint8_t*)&i.second, sizeof(i.second));
         if (result != (sizeof(i.first) + sizeof(i.second))) {
           // something went wrong
-          Serial.printf("!! ERROR while writing file !!\n   Result = %d\n", result);
+          SERIAL_PRINTLN("!! ERROR while writing file !!\n   Result = %d\n", result);
           HS::PokePopup(HS::MESSAGE_POPUP, HS::LFS_WRITE_ERROR);
           success = false;
           break;
@@ -108,14 +110,14 @@ bool save_config(const char* filename, FS &fs)
         dataFile.write((const uint8_t*)&checksum, 8);
       }
 
-      Serial.printf("Records written = %u\n", record_count);
-      Serial.printf("Bytes written = %u\n", bytes_written);
-      Serial.printf("Checksum: %lx%lx\n",
+      SERIAL_PRINTLN("Records written = %u\n", record_count);
+      SERIAL_PRINTLN("Bytes written = %u\n", bytes_written);
+      SERIAL_PRINTLN("Checksum: %lx%lx\n",
           (uint32_t)checksum, (uint32_t)(checksum >> 32));
 
       dataFile.close();
     } else {
-      Serial.printf("error opening %s\n", filename);
+      SERIAL_PRINTLN("error opening %s\n", filename);
       success = false;
     }
 
@@ -132,10 +134,10 @@ bool load_config(const char* filename, FS &fs)
   cfg_store.clear();
   record_count = 0;
 
-  Serial.printf("\nLoading Config: %s\n", filename);
+  SERIAL_PRINTLN("\nLoading Config: %s\n", filename);
   dataFile = fs.open(filename);
   if (!dataFile) {
-    Serial.printf("ERROR opening %s\n", filename);
+    SERIAL_PRINTLN("ERROR opening %s\n", filename);
     return false;
   }
 
@@ -149,7 +151,7 @@ bool load_config(const char* filename, FS &fs)
 
   // header signature
   if (buf[0] != 'P' || buf[1] != 'Z') {
-    Serial.print("Bad PZ signature...");
+    SERIAL_PRINTLN("Bad PZ signature...");
     dataFile.close();
     return false;
   }
@@ -206,11 +208,11 @@ bool load_config(const char* filename, FS &fs)
       //if (record_count == expected_record_count) break;
     }
   }
-  Serial.printf("Loaded %u Records. (expected %u)\n", record_count, expected_record_count);
-  Serial.printf("Checksum: %s (actual: %lx%lx)\n",
+  SERIAL_PRINTLN("Loaded %u Records. (expected %u)\n", record_count, expected_record_count);
+  SERIAL_PRINTLN("Checksum: %s (actual: %lx%lx)\n",
       (computed_checksum == expected_checksum)? "OK" : "ERROR",
       (uint32_t)computed_checksum, (uint32_t)(computed_checksum >> 32));
-  Serial.printf("(File header checksum: %lx%lx)\n",
+  SERIAL_PRINTLN("(File header checksum: %lx%lx)\n",
       (uint32_t)expected_checksum, (uint32_t)(expected_checksum >> 32));
 
   dataFile.close();
