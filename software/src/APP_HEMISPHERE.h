@@ -373,6 +373,10 @@ public:
 
         FILTERMASK1_KEY = 100,
         FILTERMASK2_KEY = 101,
+
+        PC_CHANNEL_KEY = 110,
+
+        Q_ENGINE_KEY   = 200, // + slot number
     };
 
     void StoreToPreset(int id, bool skip_eeprom = false) {
@@ -410,12 +414,26 @@ public:
         // applet ids, and maybe some other stuff?
         PhzConfig::setValue(preset_key | APPLET_METADATA_KEY, data);
 
-        // applet filtering is actually just global
+        // -- Globals (per file) --
         PhzConfig::setValue(FILTERMASK1_KEY, HS::hidden_applets[0]);
         PhzConfig::setValue(FILTERMASK2_KEY, HS::hidden_applets[1]);
 
-        // TODO: store quant settings in same file?
-        //Calibr8or_instance.SavePreset();
+        PhzConfig::setValue(PC_CHANNEL_KEY, HS::frame.MIDIState.pc_channel);
+
+        // Global quantizer settings
+        for (size_t qslot = 0; qslot < QUANT_CHANNEL_COUNT; ++qslot) {
+          /* TODO
+            int8_t offset;
+            int16_t scale_factor; // precision of 0.01% as an offset from 100%
+            int8_t transpose; // in semitones
+          */
+          data = PackPackables(
+              HS::quant_scale[qslot],
+              HS::q_octave[qslot],
+              HS::root_note[qslot],
+              HS::q_mask[qslot]);
+          PhzConfig::setValue(Q_ENGINE_KEY + qslot, data);
+        }
 
         PhzConfig::save_config(PRESET_FILENAME);
 #else
@@ -426,6 +444,7 @@ public:
     void LoadFromPreset(int id) {
         preset_id = id;
 #ifdef __IMXRT1062__
+        // T4.x uses a LittleFS file via PhzConfig
         uint16_t preset_key = id << 9;
         uint64_t data;
 
@@ -465,10 +484,26 @@ public:
           HS::frame.clockskip[i] = Unpack(data, PackLocation{8 + i*16, 8});
         }
 
-        // applet filtering is actually just global
+        // --- Global stuff ---
+        // (per file, not per preset)
+
         PhzConfig::getValue(FILTERMASK1_KEY, HS::hidden_applets[0]);
         PhzConfig::getValue(FILTERMASK2_KEY, HS::hidden_applets[1]);
+
+        if (PhzConfig::getValue(PC_CHANNEL_KEY, data)) HS::frame.MIDIState.pc_channel = (uint8_t) data;
+
+        for (size_t qslot = 0; qslot < QUANT_CHANNEL_COUNT; ++qslot) {
+          if (!PhzConfig::getValue(Q_ENGINE_KEY + qslot, data))
+              break;
+          UnpackPackables(data,
+              HS::quant_scale[qslot],
+              HS::q_octave[qslot],
+              HS::root_note[qslot],
+              HS::q_mask[qslot]);
+          QuantizerConfigure(qslot, quant_scale[qslot], q_mask[qslot]);
+        }
 #else
+        // T3.2 uses EEPROM interface
         hem_active_preset = (HemispherePreset*)(hem_presets + id);
         if (hem_active_preset->is_valid()) {
             clock_data = hem_active_preset->GetClockData();
