@@ -35,7 +35,7 @@ namespace HS {
   bool auto_save_enabled = false;
 #ifdef ARDUINO_TEENSY41
   int trigger_mapping[APPLET_SLOTS * 2] = { 1, 2, 3, 4, 1, 2, 3, 4 };
-  int cvmapping[APPLET_SLOTS * 2] = { 5, 6, 7, 8, 5, 6, 7, 8 };
+  int cvmapping[APPLET_SLOTS * 2] = { 1, 2, 3, 4, 5, 6, 7, 8 };
 #else
   int trigger_mapping[APPLET_SLOTS * 2] = { 1, 2, 3, 4 };
   int cvmapping[APPLET_SLOTS * 2] = { 1, 2, 3, 4 };
@@ -54,7 +54,8 @@ namespace HS {
 
     for (int i = 0; i < APPLET_SLOTS * 2; ++i) {
       trigger_mapping[i] = (i%4) + 1;
-      cvmapping[i] = (APPLET_SLOTS*2 - 4) + (i%4) + 1;
+      cvmapping[i] = i + 1;
+      clock_m.SetMultiply(0, i);
     }
   }
 
@@ -237,7 +238,10 @@ namespace HS {
       case MENU_POPUP:
         gfxPrint(78, 30, "Load");
         gfxPrint(78, 40, config_cursor == AUTO_SAVE ? "(auto)" : "Save");
-        gfxPrint(78, 50, "Config>");
+        gfxIcon(78, 50, ZAP_ICON);
+        gfxIcon(86, 50, ZAP_ICON);
+        gfxIcon(94, 50, ZAP_ICON);
+        //gfxPrint(78, 50, "????");
 
         switch (config_cursor) {
           case LOAD_PRESET:
@@ -245,11 +249,12 @@ namespace HS {
             gfxIcon(104, 30 + (config_cursor-LOAD_PRESET)*10, LEFT_ICON);
             break;
           case AUTO_SAVE:
-            if (blink)
-              gfxIcon(114, 40, auto_save_enabled ? CHECK_ON_ICON : CHECK_OFF_ICON );
+            if (auto_save_enabled)
+              gfxInvert(78, 40, 37, 8);
+            gfxIcon(116, 40, LEFT_ICON);
             break;
           case CONFIG_DUMMY:
-            gfxIcon(115, 50, RIGHT_ICON);
+            gfxIcon(104, 50, LEFT_ICON);
             break;
           default: break;
         }

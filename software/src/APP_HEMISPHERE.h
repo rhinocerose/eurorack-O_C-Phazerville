@@ -1173,15 +1173,15 @@ private:
             config_cursor += dir;
             config_cursor = constrain(config_cursor, 0, MAX_CURSOR);
 
-            if (config_cursor < CONFIG_DUMMY) config_page = LOADSAVE_POPUP;
-            else if (config_cursor <= AUTO_MIDI) config_page = CONFIG_SETTINGS;
+            if (config_cursor <= CONFIG_DUMMY) config_page = LOADSAVE_POPUP;
+            else if (config_cursor < QUANT1) config_page = CONFIG_SETTINGS;
             else if (config_cursor < TRIGMAP1) config_page = QUANTIZER_SETTINGS;
             else if (config_cursor < SHOWHIDELIST) config_page = INPUT_SETTINGS;
             //else config_page = SHOWHIDE_APPLETS;
 
             ResetCursor();
           }
-          if (config_cursor >= CONFIG_DUMMY) HS::popup_tick = 0;
+          if (config_cursor > CONFIG_DUMMY) HS::popup_tick = 0;
           return;
         }
 
@@ -1239,6 +1239,12 @@ private:
         switch (config_cursor) {
         case CONFIG_DUMMY:
             ++dummy_count;
+            // reset input mappings to defaults
+            HS::Init();
+            // randomize both applets
+            for (int ch = 0; ch < 2; ++ch) {
+              SetApplet(HEM_SIDE(ch), random(HEMISPHERE_AVAILABLE_APPLETS));
+            }
             break;
 
         case SAVE_PRESET:

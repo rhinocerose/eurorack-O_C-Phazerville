@@ -752,7 +752,7 @@ public:
     }
 
     void SetConfigPageFromCursor() {
-      if (config_cursor < CONFIG_DUMMY) config_page = LOADSAVE_POPUP;
+      if (config_cursor <= CONFIG_DUMMY) config_page = LOADSAVE_POPUP;
       else if (config_cursor < TRIGMAP1) config_page = CONFIG_SETTINGS;
       else if (config_cursor < QUANT1) config_page = INPUT_SETTINGS;
       else if (config_cursor < SHOWHIDELIST) config_page = QUANTIZER_SETTINGS;
@@ -1038,7 +1038,7 @@ private:
             SetConfigPageFromCursor();
           }
           ResetCursor();
-          if (config_cursor >= CONFIG_DUMMY) HS::popup_tick = 0;
+          if (config_cursor > CONFIG_DUMMY) HS::popup_tick = 0;
           return;
         }
 
@@ -1107,6 +1107,21 @@ private:
         }
 
         switch (config_cursor) {
+        case CONFIG_DUMMY:
+            // reset input mappings to defaults
+            HS::Init();
+            // randomize all applets
+            for (int ch = 0; ch < APPLET_SLOTS; ++ch) {
+              size_t index = random(HEMISPHERE_AVAILABLE_APPLETS);
+              SetApplet(HEM_SIDE(ch), index);
+#ifdef PEWPEWPEW
+              // load random data !!!
+              // this will expose critical bugs in data validation ;)
+              HS::available_applets[index].instance[ch]->OnDataReceive(uint64_t(random()) << 32 | (uint64_t)random());
+#endif
+            }
+            break;
+
         case SAVE_PRESET:
         case LOAD_PRESET:
             preset_cursor = preset_id + 1;
