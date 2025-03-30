@@ -126,7 +126,7 @@ void setup() {
 
   #if defined(ARDUINO_TEENSY41)
   OC::Pinout_Detect();
-
+  SDcard_Ready = SD.begin(BUILTIN_SDCARD);
   // Standard MIDI I/O on Serial8, only for Teensy 4.1
   if (MIDI_Uses_Serial8) {
     Serial8.begin(31250);

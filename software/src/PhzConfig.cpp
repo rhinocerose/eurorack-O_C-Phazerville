@@ -38,7 +38,7 @@ void setup()
   }
   */
 
-  if (HS::wavplayer_available) {
+  if (SDcard_Ready) {
     SERIAL_PRINTLN("SD card available for preset storage");
     //listFiles(SD);
   }

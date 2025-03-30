@@ -5,9 +5,7 @@
 #include <SD.h>
 #include <unordered_map>
 
-namespace HS {
-  extern bool wavplayer_available;
-}
+extern bool SDcard_Ready;
 
 namespace PhzConfig {
   using KEY = uint16_t;

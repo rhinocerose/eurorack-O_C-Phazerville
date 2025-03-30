@@ -23,7 +23,7 @@ public:
     FileHPF(0);
 
     // -- SD card WAV players
-    if (!HS::wavplayer_available) {
+    if (!SDcard_Ready) {
       Serial.println("Unable to access the SD card");
     }
     else {
@@ -62,7 +62,7 @@ public:
   }
 
   void mainloop() {
-    if (HS::wavplayer_available) {
+    if (SDcard_Ready) {
       for (int ch = 0; ch < 1; ++ch) {
         if (wavplayer_reload[ch]) {
           FileLoad(ch);
@@ -295,7 +295,7 @@ private:
   void ToggleFilePlayer(int ch = 0) {
     if (wavplayer[ch].isPlaying()) {
       wavplayer[ch].stop();
-    } else if (HS::wavplayer_available) {
+    } else if (SDcard_Ready) {
       StartPlaying(ch);
     }
   }

@@ -22,6 +22,7 @@ extern bool I2S2_Audio_ADC;
 extern bool I2S2_Audio_DAC;
 extern bool I2C_Expansion;
 extern bool MIDI_Uses_Serial8;
+extern bool SDcard_Ready;
 
 // OLED CS is active low
 #define OLED_CS_ACTIVE LOW

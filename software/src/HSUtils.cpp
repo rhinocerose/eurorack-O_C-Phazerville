@@ -42,7 +42,6 @@ namespace HS {
 #endif
   uint8_t trig_length = 10; // in ms, multiplier for HEMISPHERE_CLOCK_TICKS
   uint8_t screensaver_mode = 3; // 0 = blank, 1 = Meters, 2 = Scope/Zaps, 3 = Zips/Stars
-  bool wavplayer_available = false;
 
   OC::menu::ScreenCursor<5> showhide_cursor;
 
@@ -57,10 +56,6 @@ namespace HS {
       trigger_mapping[i] = (i%4) + 1;
       cvmapping[i] = (APPLET_SLOTS*2 - 4) + (i%4) + 1;
     }
-
-#ifdef ARDUINO_TEENSY41
-    wavplayer_available = SD.begin(BUILTIN_SDCARD);
-#endif
   }
 
   void PokePopup(PopupType pop, ErrMsgIndex err) {

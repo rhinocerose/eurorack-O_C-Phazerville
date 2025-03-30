@@ -26,6 +26,7 @@ bool I2C_Expansion=false;
 bool MIDI_Uses_Serial8=false;
 float id_voltage = 0.0;
 bool flip_mode = false;
+bool SDcard_Ready = false;
 
 FLASHMEM
 void OC::SetFlipMode(bool flip_180) {

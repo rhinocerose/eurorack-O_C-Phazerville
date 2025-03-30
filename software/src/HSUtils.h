@@ -230,7 +230,6 @@ namespace HS {
   extern int cvmapping[ADC_CHANNEL_LAST];
   extern uint8_t trig_length;
   extern uint8_t screensaver_mode;
-  extern bool wavplayer_available;
 
   extern OC::menu::ScreenCursor<5> showhide_cursor;
 

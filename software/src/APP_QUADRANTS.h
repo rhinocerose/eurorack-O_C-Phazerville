@@ -277,7 +277,7 @@ public:
       bank_filename[7] = '0' + char(id % 10);
 
       bool success = false;
-      if (HS::wavplayer_available) // load from SD card
+      if (SDcard_Ready) // load from SD card
         success = PhzConfig::load_config(bank_filename, SD);
 
       if (!success) // fallback load from LFS
@@ -376,7 +376,7 @@ public:
         audio_app.SavePreset(id);
 
         bool success = false;
-        if (HS::wavplayer_available)
+        if (SDcard_Ready)
           success = PhzConfig::save_config(bank_filename, SD);
         else
           success = PhzConfig::save_config(bank_filename);
