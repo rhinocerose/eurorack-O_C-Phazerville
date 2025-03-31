@@ -274,21 +274,23 @@ public:
         uint64_t data = 0;
         Pack(data, PackLocation { 0, 1 }, HS::auto_save_enabled);
         Pack(data, PackLocation { 1, 1 }, HS::cursor_wrap);
-        Pack(data, PackLocation { 2, 2 }, HS::screensaver_mode);
+        // 2 empty bits
         Pack(data, PackLocation { 4, 7 }, HS::trig_length);
         Pack(data, PackLocation { 11, 5 }, HS::clock_m.GetClockPPQN());
         Pack(data, PackLocation { 16, 1 }, (HS::clock_m.IsRunning() || HS::clock_m.IsPaused()));
-        // 48 bits free
+        Pack(data, PackLocation { 17, 3 }, HS::screensaver_mode);
+        // 45 bits free
         return data;
     }
     void SetGlobals(const uint64_t &data) {
         HS::auto_save_enabled = Unpack(data, PackLocation { 0, 1 });
         HS::cursor_wrap = Unpack(data, PackLocation { 1, 1 });
-        HS::screensaver_mode = Unpack(data, PackLocation { 2, 2 });
+
         HS::trig_length = constrain( Unpack(data, PackLocation { 4, 7 }), 1, 127);
         HS::clock_m.SetClockPPQN(Unpack(data, PackLocation { 11, 5 }));
         if (Unpack(data, PackLocation{16, 1}) && !HS::clock_m.IsRunning())
           HS::clock_m.Start(true);
+        HS::screensaver_mode = Unpack(data, PackLocation { 17, 3 });
     }
 
 protected:
