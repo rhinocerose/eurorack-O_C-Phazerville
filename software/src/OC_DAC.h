@@ -60,7 +60,13 @@ public:
   #endif
 
   struct CalibrationData {
+    // -3V to +6V or 0V to +10V
     uint16_t calibrated_octaves[DAC_CHANNEL_LAST][OCTAVES + 1];
+
+    // TODO: -10V to +10V for updated hardware
+    //uint16_t calibrated_octaves[DAC_CHANNEL_LAST][2*OCTAVES + 1];
+    // An alternate approach would be to store 16-bit values for one channel,
+    // and 8-bit offsets for all other channels
   };
 
   static void Init(CalibrationData *calibration_data, bool flip180 = false);

@@ -222,7 +222,6 @@ struct AppData {
   size_t used;
 };
 
-using GlobalSettingsStorage = PageStorage<EEPROMStorage, EEPROM_GLOBALSETTINGS_START, EEPROM_GLOBALSETTINGS_END, GlobalSettings>;
 using AppDataStorage = PageStorage<EEPROMStorage, EEPROM_APPDATA_START, EEPROM_APPDATA_END, AppData>;
 
 DMAMEM GlobalSettings global_settings;
@@ -242,6 +241,9 @@ enum GlobalSettingsDataKeys : uint16_t {
   SCALE_NOTEDATA = 0,
 };
 #else
+static_assert(sizeof(GlobalSettings) < (EEPROM_GLOBALSETTINGS_END - EEPROM_GLOBALSETTINGS_START), "GlobalSettings EEPROM size overflow");
+
+using GlobalSettingsStorage = PageStorage<EEPROMStorage, EEPROM_GLOBALSETTINGS_START, EEPROM_GLOBALSETTINGS_END, GlobalSettings>;
 DMAMEM GlobalSettingsStorage global_settings_storage;
 #endif
 
