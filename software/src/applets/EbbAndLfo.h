@@ -133,13 +133,23 @@ public:
     }
   }
 
-  void View() {
+  void DrawFullScreen() override {
+    DrawInterface(true);
+  }
+  void View() override {
+    DrawInterface(false);
+  }
+  void DrawInterface(bool fullscreen) {
+    const int x = (1-fullscreen)*gfx_offset;
+    const int w = (fullscreen+1)*64;
+    // waveform display
     ForEachChannel(ch) {
-      int h = 17;
+      const int h = 19;
+
       int bottom = 32 + (h + 1) * ch;
       int last = bottom;
-      for (int i = 0; i < 64; i++) {
-        ProcessSample(slope_mod, shape_mod, fold_mod, 0xffffffff / 64 * i,
+      for (int i = 0; i < w; i++) {
+        ProcessSample(slope_mod, shape_mod, fold_mod, 0xffffffff / w * i,
                       disp_sample);
         int next = 0;
         switch (output(ch)) {
@@ -158,14 +168,15 @@ public:
           break;
         }
         if (i > 0)
-          gfxLine(i - 1, last, i, next);
+          graphics.drawLine(x + i - 1, last, x + i, next);
         last = next;
       }
     }
 
     // position is first 6 bits of phase, which gives 0 through 63.
-    uint32_t p = phase >> 26;
-    gfxLine(p, 15, p, 50);
+    // fullscreen uses 7 bits, 0 to 127
+    uint32_t p = phase >> (26-fullscreen);
+    graphics.drawLine(x+p, 12, x+p, 52);
 
     const int param_y = 55;
     bool uses_cursor = false;
