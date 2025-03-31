@@ -113,12 +113,17 @@ public:
         APPLET_L2_DATA_KEY = 12,
         APPLET_R2_DATA_KEY = 13,
 
+        // 100s = Globals
         FILTERMASK1_KEY = 100,
         FILTERMASK2_KEY = 101,
 
-        PC_CHANNEL_KEY = 110,
+        PC_CHANNEL_KEY  = 110,
 
+        // 200s = Quantizers
         Q_ENGINE_KEY    = 200, // + slot number
+
+        // 300-500 = Sequences (aka Patterns)
+        SEQUENCES_KEY   = 300, // + blob index
     };
 
     void StoreToPreset(int id) {
@@ -186,6 +191,18 @@ public:
               HS::root_note[qslot],
               HS::q_mask[qslot]);
           PhzConfig::setValue(Q_ENGINE_KEY + qslot, data);
+        }
+
+        // User Patterns aka Sequences
+        for (size_t i = 0; i < OC::Patterns::PATTERN_USER_COUNT; ++i) {
+          data = 0;
+          for (size_t step = 0; step < ARRAY_SIZE(OC::Pattern::notes); ++step) {
+            Pack(data, PackLocation{(step & 0x3)*16, 16}, (uint16_t)OC::user_patterns[i].notes[step]);
+            if ((step & 0x3) == 0x3) {
+              PhzConfig::setValue(SEQUENCES_KEY + ((i << 2) | (step >> 2)), data);
+              data = 0;
+            }
+          }
         }
 
         audio_app.SavePreset(id);
@@ -267,6 +284,18 @@ public:
               HS::root_note[qslot],
               HS::q_mask[qslot]);
           QuantizerConfigure(qslot, quant_scale[qslot], q_mask[qslot]);
+        }
+
+        // User Patterns aka Sequences
+        for (size_t i = 0; i < OC::Patterns::PATTERN_USER_COUNT; ++i) {
+          for (size_t step = 0; step < ARRAY_SIZE(OC::Pattern::notes); ++step) {
+            if ((step & 0x3) == 0x0) {
+              data = 0;
+              if (!PhzConfig::getValue(SEQUENCES_KEY | (i << 2) | (step >> 2), data))
+                break;
+            }
+            OC::user_patterns[i].notes[step] = Unpack(data, PackLocation{(step & 0x3)*16, 16});
+          }
         }
 
         audio_app.LoadPreset(id);

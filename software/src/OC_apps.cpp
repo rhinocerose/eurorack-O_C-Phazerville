@@ -296,15 +296,6 @@ void save_global_settings() {
   // User Chords (progression sequences from Acid Curds)
   for (size_t i = 0; i < Chords::CHORDS_USER_COUNT; ++i) {
     data = 0;
-    /*
-    struct Chord {
-      int8_t quality;
-      int8_t inversion;
-      int8_t voicing;
-      int8_t base_note;
-      int8_t octave;
-    };
-    */
     Pack(data, PackLocation{0, 8}, (uint8_t)user_chords[i].quality);
     Pack(data, PackLocation{8, 8}, (uint8_t)user_chords[i].inversion);
     Pack(data, PackLocation{16,8}, (uint8_t)user_chords[i].voicing);
@@ -316,13 +307,6 @@ void save_global_settings() {
   // User Turing Machines (for Enigma and friends)
   for (size_t i = 0; i < HS::TURING_MACHINE_COUNT; ++i) {
     data = 0;
-    /*
-    struct TuringMachine {
-        uint16_t reg; // 16-bit shift register containing data
-        uint8_t len; // Length of this machine, in steps. 0 indicates an uninitialized TM
-        bool favorite; // Basically locks this Turing Machine
-    };
-    */
     Pack(data, PackLocation{0, 16}, HS::user_turing_machines[i].reg);
     Pack(data, PackLocation{16, 8}, HS::user_turing_machines[i].len);
     Pack(data, PackLocation{24, 1}, HS::user_turing_machines[i].favorite);
@@ -332,12 +316,6 @@ void save_global_settings() {
   // User Waveform (custom VectorOsc shapes)
   for (size_t i = 0; i < HS::VO_SEGMENT_COUNT; ++i) {
     data = 0;
-    /*
-    struct VOSegment {
-      uint8_t level;
-      uint8_t time;
-    };
-    */
     Pack(data, PackLocation{(i & 0x3) * 16, 16}, uint16_t(HS::user_waveforms[i].level) << 8 | HS::user_waveforms[i].time);
 
     if ((i & 0x3) == 0x3) {
@@ -346,15 +324,9 @@ void save_global_settings() {
     }
   }
 
-  // Auto Calibration Data?
+  // Auto Calibration Data
   for (size_t i = 0; i < DAC_CHANNEL_LAST; ++i) {
     data = 0;
-    /*
-    struct Autotune_data {
-      uint8_t use_auto_calibration_;
-      uint16_t auto_calibrated_octaves[OCTAVES + 1];
-    };
-    */
     PhzConfig::setValue(AUTOCAL_KEY | 0xff, auto_calibration_data[i].use_auto_calibration_);
 
     for (size_t oct = 0; oct < OCTAVES + 1; ++oct) {
@@ -590,15 +562,6 @@ void Init(bool reset_settings) {
         data = 0;
         if (!PhzConfig::getValue(CHORDS_KEY | i, data))
           break;
-        /*
-        struct Chord {
-          int8_t quality;
-          int8_t inversion;
-          int8_t voicing;
-          int8_t base_note;
-          int8_t octave;
-        };
-        */
         user_chords[i].quality = Unpack(data, PackLocation{0, 8});
         user_chords[i].inversion = Unpack(data, PackLocation{8, 8});
         user_chords[i].voicing = Unpack(data, PackLocation{16,8});
