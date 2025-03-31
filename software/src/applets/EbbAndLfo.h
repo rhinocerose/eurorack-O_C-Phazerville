@@ -96,13 +96,19 @@ public:
     }
 
     // check for rollover and stop for one-shot mode
-    if (phase < oldphase && oneshot_mode) {
-      phase = 0;
-      oneshot_active = false;
-      Out(0, 0);
-      Out(1, 0);
-      return;
+    if (phase < oldphase) {
+      eoa_reached = false;
+      if (oneshot_mode) {
+        phase = 0;
+        oneshot_active = false;
+        Out(0, 0);
+        Out(1, 0);
+        return;
+      }
+    } else {
+      eoa_reached = eoa_reached || (sample.flags & FLAG_EOA);
     }
+
 
     // COMPUTE
     int s = constrain(slope_mod, 0, 65535);
@@ -124,10 +130,10 @@ public:
 #endif
         break;
       case EOA:
-        GateOut(ch, sample.flags & FLAG_EOA);
+        GateOut(ch, eoa_reached);
         break;
       case EOR:
-        GateOut(ch, sample.flags & FLAG_EOR);
+        GateOut(ch, !eoa_reached);
         break;
       }
     }
@@ -397,6 +403,7 @@ private:
   bool oneshot_active = 0;
   bool clocked = 0;
   bool reset = 0;
+  bool eoa_reached = false;
 
   PhaseExtractor<> phase_extractor;
 
