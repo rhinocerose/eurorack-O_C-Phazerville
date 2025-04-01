@@ -159,12 +159,12 @@ public:
         uint32_t phase = 0xffffffff / 3600 * degrees;
         uint8_t segment = 0;
         uint8_t segment_start = 0;
-        uint32_t segment_phase = 0;
+        uint16_t segment_phase = 0;
         int16_t ignored;
         find_segment(
             phase, false, segment, segment_start, ignored, segment_phase
         );
-        return Phase32(segment, segment_phase);
+        return Phase32(segment, static_cast<uint32_t>(segment_phase) << 16);
     }
 
     int32_t Phase32(uint8_t segment, uint32_t segment_phase) {
@@ -224,15 +224,17 @@ private:
         uint8_t& segment,
         uint8_t& segment_start,
         int16_t& segment_start_level,
-        uint32_t& segment_phase
+        uint16_t& segment_phase
     ) {
         if (total_time == 0) return; // vector osc hasn't been setup yet so bail
         uint32_t start_phase = time_unit * segment_start;
-        uint32_t end_phase = start_phase + time_unit * segments[segment].time;
+        uint32_t end_phase = segment == segment_count - 1
+            ? 0xffffffff
+            : start_phase + time_unit * segments[segment].time;
         // Note: unless a segment transition has occurred, you won't enter this
         // loop. Even then, it will normally only loop once unless a segment is
         // 0 length or frequency is extremely high
-        while (!(start_phase <= phase && (phase < end_phase || segment == segment_count - 1))) {
+        while (!(start_phase <= phase && phase <= end_phase)) {
             if (sustain && segment == segment_count - 2) return;
             segment_start_level = (segments[segment].level - 128) * 256;
             segment_start += segments[segment].time;
@@ -244,7 +246,8 @@ private:
             start_phase = time_unit * segment_start;
             end_phase = start_phase + time_unit * segments[segment].time;
         }
-        segment_phase = ((phase - start_phase) / ((end_phase - start_phase) >> 16)) << 16;
+        // 1 + so denominator is guaranteed to be greater so we don't hit 65536
+        segment_phase = ((phase - start_phase) / (1 + ((end_phase - start_phase) >> 16)));
     }
 
     // Rescales full 16 bit signed valued based on scale and offset
@@ -254,7 +257,7 @@ private:
     }
     
     int16_t update_current() {
-        uint32_t segment_phase;
+        uint16_t segment_phase;
         find_segment(
             phase,
             sustain,
@@ -270,7 +273,7 @@ private:
         return InterpLinear16(
             segment_start_level,
             (segments[segment_index].level - 128) * 255,
-            segment_phase >> 16
+            segment_phase
         );
     }
 };
