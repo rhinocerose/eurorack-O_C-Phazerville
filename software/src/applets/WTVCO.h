@@ -28,14 +28,13 @@ public:
     enum MenuPages {
         MENU_WAVETABLES,
         MENU_PARAMS,
-        MENU_MOD_SOURCES,
+        MENU_MOD_DEST,
 
-        MENU_LAST = MENU_MOD_SOURCES
+        MENU_LAST = MENU_MOD_DEST
     };
 
     enum Wave_Cursor {
-        WAVEFORM_NEXT_PAGE = 0,
-        WAVEFORM_OUT = WAVEFORM_NEXT_PAGE,
+        WAVEFORM_OUT = 0,
         WAVEFORM_A,
         WAVEFORM_B,
         WAVEFORM_C,
@@ -44,7 +43,7 @@ public:
     };
 
     enum Param_Cursor {
-        PARAM_NEXT_PAGE = 0,
+        PARAM_NONE = 0,
         PARAM_PITCH_1,
         PARAM_PITCH_2,
         PARAM_WT_BLEND,
@@ -60,12 +59,13 @@ public:
     };
 
     enum ModDest_Cursor {
-        MOD_NEXT_PAGE = 0,
-        MOD_CV1,
+        MOD_CV1 = 1,
         MOD_CV2,
 
         MOD_LAST = MOD_CV2
     };
+
+    const int CURSOR_LAST = WAVEFORM_LAST + PARAM_LAST + MOD_LAST;
 
     enum WaveTables { A, B, C, OUT };
 
@@ -174,7 +174,7 @@ public:
                 DrawParamMenu();
                 DrawParams();
                 break;
-            case MENU_MOD_SOURCES:
+            case MENU_MOD_DEST:
                 DrawCVDestMenu();
                 DrawCVDestinations();
                 break;
@@ -183,15 +183,15 @@ public:
         DrawSelector();
     }
 
-    void OnButtonPress() { // TODO: convert UI pages to one long cursor chain
-        if (cursor == 0) menu_page = (++menu_page > MENU_LAST) ? 0 : menu_page;
+    void OnButtonPress() {
+        if (cursor == 0) return; // add some feature to WAVEFORM_OUT?
         else CursorToggle();
     }
 
     void AuxButton() {
         if (menu_page == MENU_WAVETABLES) {
-            if (cursor > WAVEFORM_OUT) {
-                const int idx = cursor - WAVEFORM_A;
+            if (page_cursor > WAVEFORM_OUT) {
+                const int idx = page_cursor - WAVEFORM_A;
                 if (waveform[idx] == WAVE_NOISE) noise_freeze = !noise_freeze; // toggle "realtime" or frozen noise wave buffer
                 else if (waveform[idx] == WAVE_RAND_STEPPED) GenerateWaveForm_RandStepped(wavetable[idx]); // re-roll random step wave
             }
@@ -199,18 +199,28 @@ public:
     }
 
     void OnEncoderMove(int direction) {
+        if (!EditMode()) {
+            MoveCursor(cursor, direction, CURSOR_LAST);
+            if (cursor > PARAM_LAST + WAVEFORM_LAST) {
+                menu_page = MENU_MOD_DEST;
+            } else if (cursor > WAVEFORM_LAST) {
+                menu_page = MENU_PARAMS;
+            } else {
+                menu_page = MENU_WAVETABLES;
+            }
+            page_cursor = cursor - (menu_page > MENU_WAVETABLES) * WAVEFORM_LAST - (menu_page > MENU_PARAMS) * PARAM_LAST;
+            return;
+        }
+
+
         switch (menu_page) {
             case MENU_WAVETABLES:
-                if (!EditMode()) {
-                    MoveCursor(cursor, direction, WAVEFORM_LAST);
-                    return;
-                }
-                switch((Wave_Cursor)cursor) {
+                switch(page_cursor) {
                     case WAVEFORM_A:
                     case WAVEFORM_B:
                     case WAVEFORM_C:
                     {
-                        const int idx = cursor - WAVEFORM_A;
+                        const int idx = page_cursor - WAVEFORM_A;
                         waveform[idx] = (WaveForms) constrain(((int)waveform[idx]) + direction, 0, WAVEFORM_COUNT - 1);
                         GenerateWaveTable(idx);
                         break;
@@ -220,11 +230,7 @@ public:
                 break;
 
             case MENU_PARAMS:
-                if (!EditMode()) {
-                    MoveCursor(cursor, direction, PARAM_LAST);
-                    return;
-                }
-                switch((Param_Cursor)cursor) {
+                switch(page_cursor) {
                     case PARAM_PITCH_1:
                         pitch[0] = constrain(pitch[0] + (direction * 128), MIN_PITCH, MAX_PITCH);
                         break;
@@ -250,16 +256,12 @@ public:
                 }
                 break;
 
-            case MENU_MOD_SOURCES:
-                if (!EditMode()) {
-                    MoveCursor(cursor, direction, MOD_LAST);
-                    return;
-                }
+            case MENU_MOD_DEST:
                 int8_t c, d;
-                switch((ModDest_Cursor)cursor) {
+                switch(page_cursor) {
                     case MOD_CV1:
                     case MOD_CV2:
-                        c = cursor - MOD_CV1;
+                        c = page_cursor - MOD_CV1;
                         d = cv_dest[c] + direction; // skip Pitch2 and Osc2Dir as mod destinations
                         cv_dest[c] = constrain(cv_dest[c] + direction * (1 + (d == PARAM_PITCH_2) + (d == PARAM_OSC2_DIRECTION)), 0, PARAM_LAST);
                         break;
@@ -313,6 +315,7 @@ protected:
 private:
     int cursor = 0; // WTVCO_Cursor
     int menu_page = 0;
+    int page_cursor = 0;
 
     uint8_t cv_dest[2] = { PARAM_PITCH_1, PARAM_WT_BLEND };
 
@@ -358,21 +361,21 @@ private:
 
         switch (menu_page) {
             case MENU_WAVETABLES:
-                if(!EditMode()) x = cursor * X_DIV;
+                if(!EditMode()) x = page_cursor * X_DIV;
                 else return;
                 break;
             case MENU_PARAMS:
-                if (cursor == 0) break;
+                if (page_cursor == 0) break;
                 w = 19;
-                x = 44 - (cursor % 2) * 32;
-                if (cursor == PARAM_LAST) x += 32;
-                y = MENU_ROW + 8 + Y_DIV * (1 + (cursor > PARAM_PITCH_2) + (cursor > PARAM_OSC2_DIRECTION));
+                x = 44 - (page_cursor % 2) * 32;
+                if (page_cursor == PARAM_LAST) x += 32;
+                y = MENU_ROW + 8 + Y_DIV * (1 + (page_cursor > PARAM_PITCH_2) + (page_cursor > PARAM_OSC2_DIRECTION));
                 break;
-            case MENU_MOD_SOURCES:
-                if (cursor == 0) break;
+            case MENU_MOD_DEST:
+                if (page_cursor == 0) break;
                 w = 39;
                 x = 24;
-                y = MENU_ROW + 8 + (cursor * Y_DIV);
+                y = MENU_ROW + 8 + (page_cursor * Y_DIV);
                 break;
             default: return;
         }
@@ -392,12 +395,12 @@ private:
                 ++label[0];
             }
         } else {
-            switch((Wave_Cursor)cursor) {
+            switch(page_cursor) {
                 case WAVEFORM_A:
                 case WAVEFORM_B:
                 case WAVEFORM_C:
                 {
-                    const int idx = cursor - WAVEFORM_A;
+                    const int idx = page_cursor - WAVEFORM_A;
                     char label[] = {char('A'+idx), ':', '\0'};
                     gfxPrint(3, MENU_ROW, label);
                     gfxPrint(waveform_names[waveform[idx]]);
@@ -412,14 +415,14 @@ private:
     }
 
     void DrawWaveForm() {
-        switch((Wave_Cursor)cursor) {
+        switch(page_cursor) {
             case WAVEFORM_OUT:
                 gfxRenderWave(OUT);
                 break;
             case WAVEFORM_A:
             case WAVEFORM_B:
             case WAVEFORM_C:
-                gfxRenderWave(cursor - WAVEFORM_A);
+                gfxRenderWave(page_cursor - WAVEFORM_A);
                 break;
             default: break;
         }
@@ -456,7 +459,7 @@ private:
         gfxIcon(50, y, osc2_rev ? ROTATE_L_ICON : ROTATE_R_ICON);
         y += Y_DIV;
 
-        if (cursor < PARAM_LAST) {
+        if (page_cursor < PARAM_LAST) {
             gfxIcon(1, y, PhzIcons::speaker); // Volume
             gfxPos(12, y); graphics.printf("%3d", attenuation);
 
