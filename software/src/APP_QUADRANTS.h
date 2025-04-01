@@ -291,7 +291,7 @@ public:
           for (size_t step = 0; step < ARRAY_SIZE(OC::Pattern::notes); ++step) {
             if ((step & 0x3) == 0x0) {
               data = 0;
-              if (!PhzConfig::getValue(SEQUENCES_KEY | (i << 2) | (step >> 2), data))
+              if (!PhzConfig::getValue(SEQUENCES_KEY + ((i << 2) | (step >> 2)), data))
                 break;
             }
             OC::user_patterns[i].notes[step] = Unpack(data, PackLocation{(step & 0x3)*16, 16});
