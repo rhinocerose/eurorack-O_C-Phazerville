@@ -293,6 +293,7 @@ void FASTRUN loop() {
       do {
         int cmd = Serial.read();
         switch (cmd) {
+#ifdef PRINT_DEBUG
           case 'z':
             Serial.println("-=[ PEW PEW NERDS! ]=-");
             Serial.println("Secret Menu Options:");
@@ -356,7 +357,7 @@ void FASTRUN loop() {
           case '>':
             // simulate Right Encoder turn
             break;
-
+#endif
           default:
             capreq = true;
             break;
