@@ -566,7 +566,7 @@ public:
             }
 
             if (message == usbMIDI.ProgramChange
-            && (device.getChannel() == f.MIDIState.pc_channel+1 || f.MIDIState.pc_channel == f.MIDIState.PC_OMNI)) {
+            && (device.getChannel() == f.MIDIState.pc_channel || f.MIDIState.pc_channel == f.MIDIState.PC_OMNI)) {
                 uint8_t slot = device.getData1();
                 if (slot < HEM_NR_OF_PRESETS) {
                   if (HS::clock_m.IsRunning()) {
@@ -1134,6 +1134,7 @@ private:
         SCREENSAVER_MODE,
         CURSOR_MODE,
         AUTO_MIDI,
+        MIDI_PC_CHANNEL,
 
         // Global Quantizers: 4x(Scale, Root, Octave, Mask?)
         QUANT1, QUANT2, QUANT3, QUANT4,
@@ -1202,6 +1203,10 @@ private:
             break;
         case TRIG_LENGTH:
             HS::trig_length = (uint32_t) constrain( int(HS::trig_length + dir), 1, 127);
+            break;
+        case MIDI_PC_CHANNEL:
+            HS::frame.MIDIState.pc_channel =
+              constrain(HS::frame.MIDIState.pc_channel + dir, 0, 17);
             break;
         //case SCREENSAVER_MODE:
             // TODO?
@@ -1276,6 +1281,7 @@ private:
         case CVMAP3:
         case CVMAP4:
         case TRIG_LENGTH:
+        case MIDI_PC_CHANNEL:
         default:
             isEditing = !isEditing;
             break;
@@ -1406,12 +1412,17 @@ private:
         gfxPrint(1, 25, "Screensaver:  ");
         gfxPrint( ssmodes[HS::screensaver_mode] );
 
-        const char * const cursor_mode_name[3] = { "modal", "modal+wrap" };
-        gfxPrint(1, 35, "Cursor:  ");
-        gfxPrint(cursor_mode_name[HS::cursor_wrap]);
+        gfxPrint(1, 35, "Cursor wrap:  ");
+        gfxPrint(OC::Strings::off_on[HS::cursor_wrap]);
 
         gfxPrint(1, 45, "Auto MIDI-Out:  ");
-        gfxPrint( HS::frame.autoMIDIOut ? "On" : "Off" );
+        gfxPrint( OC::Strings::off_on[HS::frame.autoMIDIOut]);
+
+        const uint8_t pc_ch = HS::frame.MIDIState.pc_channel;
+        gfxPrint(1, 55, "MIDI-PC Ch:  ");
+        if (pc_ch == 0) graphics.printf("%4s", "Omni");
+        else if (pc_ch <= 16) graphics.printf("%4d", pc_ch);
+        else graphics.printf("%4s", "Off");
 
         switch (config_cursor) {
         case CVMAP1:
@@ -1428,10 +1439,13 @@ private:
             gfxIcon(73, 25, RIGHT_ICON);
             break;
         case CURSOR_MODE:
-            gfxIcon(43, 35, RIGHT_ICON);
+            gfxIcon(73, 35, RIGHT_ICON);
             break;
         case AUTO_MIDI:
             gfxIcon(90, 45, RIGHT_ICON);
+            break;
+        case MIDI_PC_CHANNEL:
+            gfxCursor(78, 63, 25);
             break;
         case CONFIG_DUMMY:
             gfxIcon(2, 1, LEFT_ICON);
@@ -1553,6 +1567,8 @@ static size_t HEMISPHERE_save(void *storage) {
     hem_presets[HEM_NR_OF_PRESETS].SetData(HEM_SIDE(0), HS::hidden_applets[0]);
     hem_presets[HEM_NR_OF_PRESETS].SetData(HEM_SIDE(1), HS::hidden_applets[1]);
 
+    hem_presets[HEM_NR_OF_PRESETS].SetGlobals(HS::frame.MIDIState.pc_channel);
+
     size_t used = 0;
     for (int i = 0; i <= HEM_NR_OF_PRESETS; ++i) {
         used += hem_presets[i].Save(static_cast<char*>(storage) + used);
@@ -1572,6 +1588,10 @@ static size_t HEMISPHERE_restore(const void *storage) {
 
     HS::hidden_applets[0] = hem_presets[HEM_NR_OF_PRESETS].GetData(HEM_SIDE(0));
     HS::hidden_applets[1] = hem_presets[HEM_NR_OF_PRESETS].GetData(HEM_SIDE(1));
+
+    HS::frame.MIDIState.pc_channel =
+      constrain(hem_presets[HEM_NR_OF_PRESETS].GetGlobals(), 0, 17);
+
     return used;
 #endif
 }

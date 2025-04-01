@@ -145,7 +145,7 @@ public:
                 frame.MIDIState.poly_mode = constrain(frame.MIDIState.poly_mode + direction, 0, POLY_LAST);
                 break;
             case hMIDIIn_GLOBAL_PROG_CHANGE_CHANNEL:
-                frame.MIDIState.pc_channel = constrain(frame.MIDIState.pc_channel + direction, 0, 17); // 16 = omni, 17 = off
+                frame.MIDIState.pc_channel = constrain(frame.MIDIState.pc_channel + direction, 0, 17); // 0 = omni, 17 = off
                 break;
             case hMIDIIn_LOG_VIEW:
             default:
@@ -270,8 +270,8 @@ private:
         gfxPrint(1, 35, "PC"); gfxIcon(14, 35, PhzIcons::filter);
 
         gfxPos(43, 35);
-        if (pc_ch < 16) graphics.printf("%3d", pc_ch + 1);
-        else if (pc_ch == 16) graphics.printf("%3s", "Om");
+        if (pc_ch == 0) graphics.printf("%3s", "Om");
+        else if (pc_ch <= 16) graphics.printf("%3d", pc_ch);
         else graphics.printf("%3s", "Off");
 
         for (int i = 0; i < 16; ++i) {

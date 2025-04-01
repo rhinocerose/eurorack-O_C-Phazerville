@@ -51,7 +51,7 @@ struct MIDIFrame {
     uint16_t sustain_latch; // each bit is a MIDI channel's sustain state
 
     uint8_t pc_channel = 0; // program change channel filter, used for preset selection
-    static constexpr uint8_t PC_OMNI = 16;
+    static constexpr uint8_t PC_OMNI = 0;
 
     PolyphonyData poly_buffer[DAC_CHANNEL_LAST]; // buffer for polyphonic data tracking
     uint8_t max_voice = 1;

@@ -342,7 +342,7 @@ public:
             }
 
             if (message == usbMIDI.ProgramChange
-            && (device.getChannel() == f.MIDIState.pc_channel+1 || f.MIDIState.pc_channel == f.MIDIState.PC_OMNI)) {
+            && (device.getChannel() == f.MIDIState.pc_channel || f.MIDIState.pc_channel == f.MIDIState.PC_OMNI)) {
                 uint8_t slot = device.getData1();
                 if (slot < QUAD_PRESET_COUNT) {
                     QueuePresetLoad(slot);
@@ -1004,6 +1004,7 @@ private:
         SCREENSAVER_MODE,
         CURSOR_MODE,
         PRESET_BANK_NUM,
+        MIDI_PC_CHANNEL,
 
         // Input Remapping
         TRIGMAP1, TRIGMAP2, TRIGMAP3, TRIGMAP4,
@@ -1076,6 +1077,10 @@ private:
             break;
         case PRESET_BANK_NUM:
             bank_num = constrain(bank_num + dir, 0, 99);
+            break;
+        case MIDI_PC_CHANNEL:
+            HS::frame.MIDIState.pc_channel =
+              constrain(HS::frame.MIDIState.pc_channel + dir, 0, 17);
             break;
         //case SCREENSAVER_MODE:
             // TODO?
@@ -1159,6 +1164,7 @@ private:
         case CVMAP7:
         case CVMAP8:
         case TRIG_LENGTH:
+        case MIDI_PC_CHANNEL:
             isEditing = !isEditing;
             break;
 
@@ -1285,12 +1291,17 @@ private:
         gfxPrint(1, 25, "Screensaver:  ");
         gfxPrint( ssmodes[HS::screensaver_mode] );
 
-        const char * cursor_mode_name[3] = { "modal", "modal+wrap" };
-        gfxPrint(1, 35, "Cursor:  ");
-        gfxPrint(cursor_mode_name[HS::cursor_wrap]);
+        gfxPrint(1, 35, "Cursor wrap:  ");
+        gfxPrint(OC::Strings::off_on[HS::cursor_wrap]);
 
         gfxPrint(1, 45, "Preset Bank# ");
         gfxPrint(bank_num);
+
+        const uint8_t pc_ch = HS::frame.MIDIState.pc_channel;
+        gfxPrint(1, 55, "MIDI-PC Ch:  ");
+        if (pc_ch == 0) graphics.printf("%4s", "Omni");
+        else if (pc_ch <= 16) graphics.printf("%4d", pc_ch);
+        else graphics.printf("%4s", "Off");
 
         switch (config_cursor) {
         case TRIG_LENGTH:
@@ -1300,10 +1311,13 @@ private:
             gfxIcon(73, 25, RIGHT_ICON);
             break;
         case CURSOR_MODE:
-            gfxIcon(43, 35, RIGHT_ICON);
+            gfxIcon(73, 35, RIGHT_ICON);
             break;
         case PRESET_BANK_NUM:
             gfxCursor(78, 53, 19);
+            break;
+        case MIDI_PC_CHANNEL:
+            gfxCursor(78, 63, 25);
             break;
         case CONFIG_DUMMY:
             gfxIcon(2, 1, LEFT_ICON);
