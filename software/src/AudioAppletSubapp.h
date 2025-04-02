@@ -487,6 +487,7 @@ private:
   array<array<AudioConnection, Slots + 1>, 2> conns;
   array<array<AudioAnalyzePeak, Slots + 1>, 2> peaks;
   array<array<AudioConnection, Slots + 1>, 2> peak_conns;
+  array<array<float, Slots + 1>, 2> lpf_peak_db;
 
   bool ready_for_press = false;
   size_t total, user, free;
@@ -614,13 +615,12 @@ private:
 
   int peak_width(HEM_SIDE side, int slot) {
     AudioAnalyzePeak& p = peaks[side][slot];
+    float& db = lpf_peak_db[side][slot];
     if (p.available()) {
-      float db = scalarToDb(p.read());
+      ONE_POLE(db, scalarToDb(p.read()), 0.25f);
       if (db < -48.0f) db = -48.0f;
-      return static_cast<int>((db + 48.0f) / 48.0f * 64);
-    } else {
-      return 0;
     }
+    return static_cast<int>((db + 48.0f) / 48.0f * 64);
   }
   void draw_peak(HEM_SIDE side, int slot, int y = -1) {
     int w = peak_width(side, slot);
