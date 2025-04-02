@@ -50,10 +50,10 @@ public:
     if (level_cv.source) {
       vca.bias(0.0f);
       vca.level(gain);
-      vca_cv.Push(float_to_q15(dbToScalar(LVL_MIN_DB * (1.0f - level_cv.InF())))
+      vca_cv.Push(float_to_q15(dbToScalar(-48 * (1.0f - level_cv.InF())))
       );
     } else {
-      vca.bias(dbToScalar(level));
+      vca.bias(gain);
       vca.level(0.0f);
     }
     // There's a good chance of phase correlation if the incoming signal is
