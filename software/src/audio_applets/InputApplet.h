@@ -27,6 +27,8 @@ public:
       out_conn[0].connect(mixer[0], 0, output, 0);
 
       peakpatch[0].connect(OC::AudioIO::InputStream(), 0, peakmeter[0], 0);
+
+      mixer[0].gain(2, 1.0); // passthru
     } else {
       for (int i = 0; i < Channels; ++i) {
         in_conn[i].connect(OC::AudioIO::InputStream(), i, mixer[i], 0);
@@ -36,6 +38,8 @@ public:
         out_conn[i].connect(mixer[i], 0, output, i);
 
         peakpatch[i].connect(OC::AudioIO::InputStream(), i, peakmeter[i], 0);
+
+        mixer[i].gain(2, 1.0); // passthru
       }
     }
   }
