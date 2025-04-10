@@ -304,8 +304,8 @@ public:
         snap = Unpack(data, PackLocation {36,6});
         blend_snare = Unpack(data, PackLocation {42,6});
 
-        cv_mode_kick = Unpack(data, PackLocation {48,4});
-        cv_mode_snare = Unpack(data, PackLocation {52,4});
+        cv_mode_kick = constrain(Unpack(data, PackLocation {48,4}), 0, 4);
+        cv_mode_snare = constrain(Unpack(data, PackLocation {52,4}), 0, 4);
 
         mix_outs = Unpack(data, PackLocation {56,1});
     }
