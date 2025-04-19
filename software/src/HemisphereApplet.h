@@ -397,12 +397,15 @@ public:
         cursor_start_y = gfxGetPrintPosY();
     }
 
-    void gfxEndCursor(bool selected) {
+    void gfxEndCursor(bool selected, bool spicy = false) {
         if (selected) {
             int16_t w = gfxGetPrintPosX() - cursor_start_x;
             int16_t y = gfxGetPrintPosY() + 8;
             int h = y - cursor_start_y;
-            gfxCursor(cursor_start_x, y, w, h);
+            if (spicy)
+              gfxSpicyCursor(cursor_start_x, y, w, h);
+            else
+              gfxCursor(cursor_start_x, y, w, h);
         }
     }
 
