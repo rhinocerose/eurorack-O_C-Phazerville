@@ -1,5 +1,6 @@
 #include "Audio/AudioPassthrough.h"
 #include "HemisphereAudioApplet.h"
+#include "OC_gpio.h"
 #include <TeensyVariablePlayback.h>
 
 template <AudioChannels Channels>
@@ -33,17 +34,19 @@ public:
       //wavplayer[1].setBufferInPSRAM(true);
     }
   }
+  void Unload() {
+    wavplayer[0].stop();
+  }
 
   void Controller() {
     float gain = dbToScalar(level) * level_cv.InF(1.0f);
 
     const int i = 0;
     FileLevel(gain);
-    const int speed_cv = abs(playrate_cv.In(0)) >> 2;
-    if (speed_cv)
-      FileRate(0.01f * playrate + playrate_cv.InF(0.0f));
-    else if (tempo_sync)
+    if (tempo_sync)
       FileMatchTempo();
+    else
+      FileRate(0.01f * playrate + playrate_cv.InF(0.0f));
 
     if (HS::clock_m.EndOfBeat()) {
       if (loop_length[i] && loop_on[i]) {
@@ -51,7 +54,8 @@ public:
           FileHotCue(i);
       }
 
-      wavplayer[i].syncTrig();
+      if (tempo_sync)
+        wavplayer[i].syncTrig();
     }
 
     titlestat[7] = FileIsPlaying() ? '*' : ' ';
@@ -83,6 +87,10 @@ public:
   }
 
   void View() {
+    if (!SDcard_Ready) {
+      gfxPrint(4, 25, "NO SD CARD!!");
+      return;
+    }
     size_t y = 13;
     gfxStartCursor(1, y);
     gfxPrintfn(1, y, 0, "%03u", GetFileNum());
@@ -109,11 +117,13 @@ public:
       }
     }
 
-    if (FileIsPlaying()) {
-      if (cursor != FILTER_PARAM) {
+    if (cursor != FILTER_PARAM) {
+      if (wavplayer_ready[0])
         gfxPrint(34, y, GetFileBPM());
-      }
-
+      else
+        gfxPrint(34, y, "(--)");
+    }
+    if (FileIsPlaying()) {
       uint32_t tmilli = GetFileTime(0);
       uint32_t tsec = tmilli / 1000;
       uint32_t tmin = tsec / 60;
@@ -134,10 +144,14 @@ public:
     gfxEndCursor(cursor == LEVEL_CV);
 
     y += 10;
-    gfxPrint(1, y, "Rate:");
+    if (tempo_sync) {
+      gfxPrint(1, y, "Sync:");
+    } else {
+      gfxPrint(1, y, "Rate:");
+    }
     gfxStartCursor();
     graphics.printf("%3d%%", playrate);
-    gfxEndCursor(cursor == PLAYRATE);
+    gfxEndCursor(cursor == PLAYRATE, true);
     gfxStartCursor();
     gfxPrintIcon(playrate_cv.Icon());
     gfxEndCursor(cursor == PLAYRATE_CV);
@@ -157,6 +171,8 @@ public:
     if (FILTER_PARAM == cursor) {
       filter_on = !filter_on;
       SetFilter(djfilter * filter_on);
+    } else if (PLAYRATE == cursor) {
+      tempo_sync ^= 1;
     } else
       ToggleFilePlayer();
   }
@@ -206,6 +222,8 @@ public:
   }
 
   uint64_t OnDataRequest() {
+    // STOP playback to avoid SD card hangup on preset save
+    wavplayer[0].stop();
     return PackPackables(level, level_cv, playrate, playrate_cv, wavplayer_select[0], djfilter);
   }
   void OnDataReceive(uint64_t data) {
@@ -271,6 +289,7 @@ private:
   // SD player vars, copied from other dev branch
   bool wavplayer_reload[2] = {true, true};
   bool wavplayer_playtrig[2] = {false};
+  bool wavplayer_ready[2] = {false};
   uint8_t wavplayer_select[2] = { 1, 10 };
   uint8_t loop_length[2] = { 8, 8 };
   int8_t loop_count[2] = { 0, 0 };
@@ -282,7 +301,7 @@ private:
     char filename[] = "000.WAV";
     filename[1] += wavplayer_select[ch] / 10;
     filename[2] += wavplayer_select[ch] % 10;
-    wavplayer[ch].playWav(filename);
+    wavplayer_ready[ch] = wavplayer[ch].playWav(filename);
   }
   void StartPlaying(int ch = 0) {
     wavplayer_playtrig[ch] = true;
