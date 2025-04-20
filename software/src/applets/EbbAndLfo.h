@@ -125,7 +125,7 @@ public:
         Out(ch, Proportion(sample.bipolar, 32767, 7680) * level_mod /
                     1000); // hardcoded at 5V for Plum Audio
 #else
-        Out(ch, Proportion(sample.bipolar, 32767, HEMISPHERE_MAX_CV / 2) *
+        Out(ch, Proportion(sample.bipolar, 32767, HEMISPHERE_MAX_CV) *
                     level_mod / 1000);
 #endif
         break;
