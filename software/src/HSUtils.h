@@ -27,7 +27,7 @@ using simfloat = int32_t;
 #define HEMISPHERE_CENTER_CV 0
 #define HEMISPHERE_MIN_CV (HEMISPHERE_MAX_CV - 15360)
 #else
-#define PULSE_VOLTAGE 5
+#define PULSE_VOLTAGE 6
 #define HEMISPHERE_MAX_CV 9216 // 6V
 #define HEMISPHERE_CENTER_CV 0
 #define HEMISPHERE_MIN_CV -4608 // -3V
