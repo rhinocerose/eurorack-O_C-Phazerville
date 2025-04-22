@@ -48,7 +48,6 @@ class TB_3PO: public HemisphereApplet {
     const uint8_t* applet_icon() { return PhzIcons::tb3P0; }
 
   void Start() {
-    manual_reset_flag = 0;
     rand_apply_anim = 0;
     curr_step_semitone = 0;
 
@@ -70,8 +69,7 @@ class TB_3PO: public HemisphereApplet {
     slide_end_cv = 0;
 
     lock_seed = 0;
-    reseed();
-
+    Reset();
   }
 
   void Reset() {
@@ -226,6 +224,8 @@ class TB_3PO: public HemisphereApplet {
       uint32_t mask = 0xf;
       seed &= ~(mask << shift_amt); // Clear bits where this nibble lives
       seed |= (nib << shift_amt); // Move the nibble to its home
+
+      regenerate_all();
       break;
     }
     case DENSITY: // density
