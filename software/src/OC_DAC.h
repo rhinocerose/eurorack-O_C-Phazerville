@@ -235,30 +235,30 @@ public:
     #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
       if (DAC8568_Uses_SPI) {
         if (NorthernLightModular) {
-          dac8568_set_channel(0, values_[DAC_CHANNEL_A]);
-          dac8568_set_channel(1, values_[DAC_CHANNEL_B]);
-          dac8568_set_channel(2, values_[DAC_CHANNEL_C]);
-          dac8568_set_channel(3, values_[DAC_CHANNEL_D]);
-          dac8568_set_channel(4, values_[DAC_CHANNEL_E]);
-          dac8568_set_channel(5, values_[DAC_CHANNEL_F]);
-          dac8568_set_channel(6, values_[DAC_CHANNEL_G]);
-          dac8568_set_channel(7, values_[DAC_CHANNEL_H]);
+          dac8568_set_channel(0, values_[0]);
+          dac8568_set_channel(1, values_[1]);
+          dac8568_set_channel(2, values_[2]);
+          dac8568_set_channel(3, values_[3]);
+          dac8568_set_channel(4, values_[4]);
+          dac8568_set_channel(5, values_[5]);
+          dac8568_set_channel(6, values_[6]);
+          dac8568_set_channel(7, values_[7]);
         } else {
-          dac8568_set_channel(0, MAX_VALUE - values_[DAC_CHANNEL_A]);
-          dac8568_set_channel(1, MAX_VALUE - values_[DAC_CHANNEL_B]);
-          dac8568_set_channel(2, MAX_VALUE - values_[DAC_CHANNEL_C]);
-          dac8568_set_channel(3, MAX_VALUE - values_[DAC_CHANNEL_D]);
-          dac8568_set_channel(4, MAX_VALUE - values_[DAC_CHANNEL_E]);
-          dac8568_set_channel(5, MAX_VALUE - values_[DAC_CHANNEL_F]);
-          dac8568_set_channel(6, MAX_VALUE - values_[DAC_CHANNEL_G]);
-          dac8568_set_channel(7, MAX_VALUE - values_[DAC_CHANNEL_H]);
+          dac8568_set_channel(0, MAX_VALUE - values_[0]);
+          dac8568_set_channel(1, MAX_VALUE - values_[1]);
+          dac8568_set_channel(2, MAX_VALUE - values_[2]);
+          dac8568_set_channel(3, MAX_VALUE - values_[3]);
+          dac8568_set_channel(4, MAX_VALUE - values_[4]);
+          dac8568_set_channel(5, MAX_VALUE - values_[5]);
+          dac8568_set_channel(6, MAX_VALUE - values_[6]);
+          dac8568_set_channel(7, MAX_VALUE - values_[7]);
         }
       } else {
     #endif
-        set8565_CHA(values_[DAC_CHANNEL_A]);
-        set8565_CHB(values_[DAC_CHANNEL_B]);
-        set8565_CHC(values_[DAC_CHANNEL_C]);
-        set8565_CHD(values_[DAC_CHANNEL_D]);
+        set8565_CHA(values_[0]);
+        set8565_CHB(values_[1]);
+        set8565_CHC(values_[2]);
+        set8565_CHD(values_[3]);
     #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
       }
     #endif

@@ -12,6 +12,7 @@
 #include <vector>
 #include "HSMIDI.h"
 #include "HSUtils.h"
+#include "OC_DAC.h"
 
 namespace HS {
 
@@ -756,8 +757,14 @@ struct IOFrame {
     }
 
     void Send() {
+        const DAC_CHANNEL chan[DAC_CHANNEL_LAST] = {
+          DAC_CHANNEL_A, DAC_CHANNEL_B, DAC_CHANNEL_C, DAC_CHANNEL_D,
+#ifdef ARDUINO_TEENSY41
+          DAC_CHANNEL_E, DAC_CHANNEL_F, DAC_CHANNEL_G, DAC_CHANNEL_H,
+#endif
+        };
         for (int i = 0; i < DAC_CHANNEL_LAST; ++i) {
-            OC::DAC::set_pitch_scaled(DAC_CHANNEL(i), outputs[i], 0);
+            OC::DAC::set_pitch_scaled(chan[i], outputs[i], 0);
         }
         if (autoMIDIOut) MIDIState.Send(outputs);
     }
