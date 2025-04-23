@@ -206,11 +206,14 @@ public:
               slew(Output[ch], HS::QuantizerLookup(qselect_mod[ch], note[1] + note_trans[1]));
               break;
             case MOD1: // 8-bit bi-polar proportioned CV
-              slew(Output[ch], Proportion( int(reg[0] & 0xff)-0x7f, 0x80, HEMISPHERE_MAX_CV) );
+            case MOD2: {
+              const int rnum = outmode[ch] - MOD1;
+              const uint32_t mask = (1u << min(len_mod, 8)) - 1;
+              slew(Output[ch],
+                  Proportion( int(reg[rnum] & mask) - (mask>>1), (mask>>1)+1, HEMISPHERE_MAX_CV)
+              );
               break;
-            case MOD2:
-              slew(Output[ch], Proportion( int(reg[1] & 0xff)-0x7f, 0x80, HEMISPHERE_MAX_CV) );
-              break;
+            }
             case TRIGPITCH1:
             case TRIGPITCH2: {
               const int rnum = outmode[ch] - TRIGPITCH1;
