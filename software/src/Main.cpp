@@ -126,23 +126,7 @@ void setup() {
 
   #if defined(ARDUINO_TEENSY41)
   OC::Pinout_Detect();
-  SDcard_Ready = SD.begin(BUILTIN_SDCARD);
-  // Standard MIDI I/O on Serial8, only for Teensy 4.1
-  if (MIDI_Uses_Serial8) {
-    Serial8.begin(31250);
-    MIDI1.begin(MIDI_CHANNEL_OMNI);
-  }
-
-  if (I2S2_Audio_ADC && I2S2_Audio_DAC) {
-    OC::AudioIO::Init();
-  }
   #endif
-
-  // initialize LittleFS for config files
-  PhzConfig::setup();
-
-  // USB Host support for both 4.0 and 4.1
-  usbHostMIDI.begin();
 #endif
 #if defined(__MK20DX256__)
   NVIC_SET_PRIORITY(IRQ_PORTB, 0); // TR1 = 0 = PTB16
@@ -190,7 +174,6 @@ void setup() {
   GRAPHICS_BEGIN_FRAME(true);
   GRAPHICS_END_FRAME();
 
-  OC::menu::Init();
   OC::ui.Init();
   OC::ui.configure_encoders(OC::calibration_data.encoder_config());
 
@@ -202,6 +185,36 @@ void setup() {
   SERIAL_PRINTLN("* UI ISR @%luus", OC_UI_TIMER_RATE);
   UI_timer.begin(UI_timer_ISR, OC_UI_TIMER_RATE);
   UI_timer.priority(OC_UI_TIMER_PRIO);
+#endif
+
+  // first sign of life
+  GRAPHICS_BEGIN_FRAME(true);
+  graphics.setPrintPos(1, 28);
+  graphics.print("*Main Screen Turn On*");
+  GRAPHICS_END_FRAME();
+
+  // --- more hardware init
+#ifdef __IMXRT1062__
+  #if defined(ARDUINO_TEENSY41)
+  // this takes a couple seconds to timeout if no card
+  SDcard_Ready = SD.begin(BUILTIN_SDCARD);
+
+  // Standard MIDI I/O on Serial8, only for Teensy 4.1
+  if (MIDI_Uses_Serial8) {
+    Serial8.begin(31250);
+    MIDI1.begin(MIDI_CHANNEL_OMNI);
+  }
+
+  if (I2S2_Audio_ADC && I2S2_Audio_DAC) {
+    OC::AudioIO::Init();
+  }
+  #endif
+
+  // initialize LittleFS for config files
+  PhzConfig::setup();
+
+  // USB Host support for both 4.0 and 4.1
+  usbHostMIDI.begin();
 #endif
 
   // Display splash screen and optional calibration
