@@ -1338,7 +1338,9 @@ private:
     }
     void DrawPresetSelector() {
         gfxHeader((config_cursor == SAVE_PRESET) ? "Save" : "Load");
-        gfxPrint(30, 1, "Preset");
+        gfxPrint(30, 1, "Preset: Bank# ");
+        gfxPrint(bank_num);
+        if (!SDcard_Ready) gfxInvert(78, 0, 30, 9);
         gfxDottedLine(16, 11, 16, 63);
 
         int y = 5 + constrain(preset_cursor,1,5)*10;
