@@ -76,7 +76,7 @@ const char* const midi_channels[17] = {
 };
 
 // The functions available for each output
-enum MIDIFunctions {
+enum MIDIFunctions : uint8_t {
     HEM_MIDI_NOOP = 0,
 
     HEM_MIDI_NOTE_OUT,
@@ -122,7 +122,7 @@ const char* const midi_fn_name[HEM_MIDI_MAX_FUNCTION + 1] = {
     "Clock", "Run", "Start"
 };
 
-enum MIDIPolyMode {
+enum MIDIPolyMode : uint8_t {
     POLY_RESET = 0,
     POLY_ROTATE,
     POLY_REUSE,

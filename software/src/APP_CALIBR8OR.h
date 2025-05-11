@@ -343,7 +343,7 @@ public:
         if (dothething) {
           // reconfigure with MIDI-derived masks
           for (int ch = 0; ch < DAC_CHANNEL_LAST; ++ch) {
-            uint16_t mask_ = HS::frame.MIDIState.semitone_mask[ch];
+            uint16_t mask_ = HS::frame.MIDIState.mapping[ch].semitone_mask;
 
             if (mask_) // manually override global config
               HS::quantizer[ch].Configure(OC::Scales::GetScale(OC::Scales::SCALE_SEMI), mask_);
@@ -370,7 +370,7 @@ public:
             if (CONTINUOUS == cfg.clocked_mode || clocked) {
                 cfg.transpose_active = cfg.transpose;
             }
-            if (HS::frame.MIDIState.semitone_mask[ch] != 0)
+            if (HS::frame.MIDIState.mapping[ch].semitone_mask != 0)
               cfg.transpose_active = 0;
 
             // respect S&H mode
@@ -712,7 +712,7 @@ public:
         if (channel[sel_chan].offset >= 0) gfxPrint("+");
         gfxPrint(channel[sel_chan].offset);
 
-        if (HS::frame.MIDIState.semitone_mask[sel_chan] != 0)
+        if (HS::frame.MIDIState.mapping[sel_chan].semitone_mask != 0)
           gfxIcon(100, y, MIDI_ICON);
 
         // mode indicator

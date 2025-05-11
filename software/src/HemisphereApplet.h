@@ -209,7 +209,11 @@ public:
     int In(const int ch) {
         const int c = cvmapping[ch + io_offset];
         if (!c) return 0;
-        return (c <= ADC_CHANNEL_LAST) ? frame.inputs[c - 1] : frame.outputs[c - 1 - ADC_CHANNEL_LAST];
+        return (c <= ADC_CHANNEL_LAST)
+          ? frame.inputs[c - 1]
+          : (c - ADC_CHANNEL_LAST <= DAC_CHANNEL_LAST)
+            ? frame.outputs[c - 1 - ADC_CHANNEL_LAST]
+            : frame.MIDIState.mapping[c - 1 - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST].output;
     }
 
     #ifdef ARDUINO_TEENSY41
