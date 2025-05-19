@@ -1265,8 +1265,6 @@ private:
           if (q.octave >= 0) gfxPrint("+");
           gfxPrint(q.octave);
 
-          // (TODO: mask editor)
-
           // 5-8 on bottom
           gfxPrint(x, 55, "Q");
           gfxPrint(ch + 5);

@@ -60,8 +60,8 @@ struct PolyphonyData {
 };
 
 struct MIDIMapSettings {
-  int8_t function_cc;
-  uint8_t function;
+  int8_t function_cc; // CC#, or some secret parameter for non-CC functions ;)
+  uint8_t function; // which type of message
   uint8_t channel; // MIDI channel number
   uint8_t dac_polyvoice; // select which voice to send from output
   int8_t transpose;
