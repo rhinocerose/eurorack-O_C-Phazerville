@@ -44,6 +44,8 @@
 
 #include "HSUtils.h"
 #include "HSIOFrame.h"
+#include <cstdint>
+#include <variant>
 
 class HemisphereApplet;
 
@@ -58,8 +60,6 @@ struct Applet {
 struct EncoderEditor {
   bool isEditing;
 };
-
-extern IOFrame frame;
 
 static constexpr bool ALWAYS_SHOW_ICONS = false;
 } // namespace HS
@@ -533,7 +533,104 @@ public:
         hemisphere = side;
     }
 
+    bool EditInputMap(CVInputMap& input_map) {
+      if (!IsEditingInputMap()) {
+        selected_input_map = &input_map;
+        return true;
+      }
+      return false;
+    }
+
+    bool EditInputMap(DigitalInputMap& input_map) {
+      if (!IsEditingInputMap()) {
+        selected_input_map = &input_map;
+        return true;
+      }
+      return false;
+    }
+
+    void ClearEditInputMap() {
+      selected_input_map = std::monostate{};
+      if (EditMode()) CursorToggle();
+    }
+
+    bool EditSelectedInputMap(int direction) {
+      if (IsEditingInputMap()) {
+        switch (selected_input_map.index()) {
+          case CV_INPUT_MAP: {
+            int8_t& att
+              = std::get<CVInputMap*>(selected_input_map)->attenuversion;
+            att = constrain(att + direction, -100, 100);
+            break;
+          }
+          case DIGITAL_INPUT_MAP: {
+            int8_t& div
+              = std::get<DigitalInputMap*>(selected_input_map)->division;
+            div = constrain(div + direction, -64, 64);
+            break;
+          }
+          default:
+            break;
+        }
+        return true;
+      }
+      return false;
+    }
+
+    void gfxDisplayInputMapEditor() {
+      if (selected_input_map.index()) {
+        gfxClear(0, 0, 63, 11);
+        switch (selected_input_map.index()) {
+          case CV_INPUT_MAP: {
+            gfxPos(32 - 5 * 6 / 2, 2);
+            graphics.printf(
+              "%4d%%", std::get<CVInputMap*>(selected_input_map)->attenuversion
+            );
+            break;
+          }
+          case DIGITAL_INPUT_MAP: {
+            gfxPos(32 - 4 * 6 / 2, 2);
+            int8_t div = std::get<DigitalInputMap*>(selected_input_map)->division;
+            if (div < 0) graphics.printf("/%3d", -div + 1);
+            else graphics.printf("X%3d", div + 1);
+            break;
+          }
+          default:
+            break;
+        }
+        gfxInvert(0, 0, 63, 11);
+      }
+    }
+
+    bool IsEditingInputMap() const {
+      return selected_input_map.index() > 0;
+    }
+
+    template <typename... Pairs>
+    bool CheckEditInputMapPress(int cursor, Pairs&&... indexed_input_maps) {
+      if (IsEditingInputMap()) {
+        ClearEditInputMap();
+        return !EditMode();
+      } else if (!EditMode()) {
+        return false;
+      }
+
+      return (
+        ...
+        || (cursor == indexed_input_maps.first ? EditInputMap(indexed_input_maps.second) : false)
+      );
+    }
+
 protected:
+    enum SelectedInputMapType {
+      NONE,
+      CV_INPUT_MAP,
+      DIGITAL_INPUT_MAP,
+    };
+
+    std::variant<std::monostate, CVInputMap*, DigitalInputMap*>
+      selected_input_map;
+
     HEM_SIDE hemisphere; // Which hemisphere (0, 1, ...) this applet uses
     virtual void SetHelp() = 0;
 

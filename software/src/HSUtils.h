@@ -144,6 +144,11 @@ constexpr int Unpack(const uint64_t &data, const PackLocation p) {
     return (data >> p.location) & mask;
 }
 
+template <typename T>
+constexpr std::pair<int, T&&> IndexedInput(int index, T&& input_map) {
+  return std::pair<int, T&&>(index, std::forward<T>(input_map));
+}
+
 void gfxPos(int x, int y);
 void gfxPrint(int x, int y, const char *str);
 void gfxPrint(int x, int y, int num);
