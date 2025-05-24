@@ -73,9 +73,17 @@ public:
     gfxStartCursor();
     gfxPrintIcon(ac_couple ? CHECK_ON_ICON : CHECK_OFF_ICON);
     gfxEndCursor(cursor == 4);
+
+    gfxDisplayInputMapEditor();
   }
 
   void OnButtonPress() override {
+    if (CheckEditInputMapPress(
+          cursor,
+          IndexedInput(0, input),
+          IndexedInput(3, gain_cv)
+    )) return;
+
     if (cursor == 4) {
       ac_couple = !ac_couple;
     } else {
@@ -88,6 +96,7 @@ public:
       MoveCursor(cursor, direction, 4);
       return;
     }
+    if(EditSelectedInputMap(direction)) return;
 
     switch (cursor) {
       case 0:

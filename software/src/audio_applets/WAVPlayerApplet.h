@@ -165,6 +165,8 @@ public:
     gfxIcon(52, y, loop_on[0] ? CHECK_ON_ICON : CHECK_OFF_ICON);
     if (cursor == LOOP_ENABLE)
       gfxFrame(51, y-1, 10, 10);
+
+    gfxDisplayInputMapEditor();
   }
 
   void AuxButton() {
@@ -177,6 +179,12 @@ public:
       ToggleFilePlayer();
   }
   void OnButtonPress() {
+    if (CheckEditInputMapPress(
+          cursor,
+          IndexedInput(LEVEL_CV, level_cv),
+          IndexedInput(PLAYRATE_CV, playrate_cv)
+    )) return;
+
     if (PLAYSTOP_BUTTON == cursor)
       ToggleFilePlayer();
     else if (LOOP_ENABLE == cursor) {
@@ -190,6 +198,7 @@ public:
       MoveCursor(cursor, direction, NUM_PARAMS - 1);
       return;
     }
+    if(EditSelectedInputMap(direction)) return;
     switch (cursor) {
       case FILE_NUM:
         ChangeToFile(0, GetFileNum() + direction);

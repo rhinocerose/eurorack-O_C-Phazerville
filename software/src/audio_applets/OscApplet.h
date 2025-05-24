@@ -141,8 +141,12 @@ public:
   }
 
   void OnButtonPress() override {
-    if (CheckEditInputMapPress(
-          cursor, IndexedInput(PW_CV, pw_cv), IndexedInput(MIX_CV, mix_cv)
+    if (CheckEditInputMapPress(cursor,
+          IndexedInput(PITCH_CV, pitch_cv),
+          IndexedInput(PW_CV, pw_cv),
+          IndexedInput(MIX_CV, mix_cv),
+          IndexedInput(MOD_CV, mod_cv),
+          IndexedInput(LEVEL_CV, level_cv)
         ))
       return;
     CursorToggle();

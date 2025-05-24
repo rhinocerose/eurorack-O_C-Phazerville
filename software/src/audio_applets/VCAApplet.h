@@ -73,6 +73,18 @@ public:
     gfxStartCursor();
     gfxPrintIcon(invert ? CHECK_ON_ICON : CHECK_OFF_ICON);
     gfxEndCursor(cursor == 6);
+
+    gfxDisplayInputMapEditor();
+  }
+
+  void OnButtonPress() override {
+    if (CheckEditInputMapPress(
+          cursor,
+          IndexedInput(1, level_cv),
+          IndexedInput(4, shape_cv)
+        ))
+      return;
+    CursorToggle();
   }
 
   void OnEncoderMove(int direction) {
@@ -80,6 +92,7 @@ public:
       MoveCursor(cursor, direction, NUM_PARAMS - 1);
       return;
     }
+    if(EditSelectedInputMap(direction)) return;
     switch (cursor) {
       case 0:
         SetLevel(level + direction);
