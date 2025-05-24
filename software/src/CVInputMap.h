@@ -3,7 +3,7 @@
 #include "HemisphereApplet.h"
 #include "PackingUtils.h"
 
-const int NUM_CV_INPUTS = CVMAP_MAX + 1;
+const int NUM_CV_INPUTS = HS::CVMAP_MAX + 1;
 //const int NUM_CV_INPUTS = ADC_CHANNEL_LAST * 2 + 1;
 // We *could* reuse HS::input_quant for inputs, but easier to just do it
 // independently, and semitone quantizers are lightwieght.
@@ -23,10 +23,10 @@ struct CVInputMap {
   }
   int RawIn() {
     return source <= ADC_CHANNEL_LAST
-      ? frame.inputs[source - 1]
+      ? HS::frame.inputs[source - 1]
       : (source - ADC_CHANNEL_LAST <= DAC_CHANNEL_LAST)
-        ? frame.outputs[source - 1 - ADC_CHANNEL_LAST]
-        : frame.MIDIState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - 1].output;
+        ? HS::frame.outputs[source - 1 - ADC_CHANNEL_LAST]
+        : HS::frame.MIDIState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - 1].output;
   }
 
   int In(int default_value = 0) {
@@ -108,17 +108,17 @@ struct DigitalInputMap {
   bool Gate() {
     switch (source_type()) {
       case CLOCK: {
-        uint32_t ticks_since_beat = OC::CORE::ticks - clock_m.beat_tick;
+        uint32_t ticks_since_beat = OC::CORE::ticks - HS::clock_m.beat_tick;
         uint32_t tick_phase
-          = (ppqn * ticks_since_beat) % clock_m.ticks_per_beat;
+          = (ppqn * ticks_since_beat) % HS::clock_m.ticks_per_beat;
         bool gate
-          = tick_phase < internal_clocked_gate_pw * clock_m.ticks_per_beat;
+          = tick_phase < internal_clocked_gate_pw * HS::clock_m.ticks_per_beat;
         return gate;
       }
       case DIGITAL_INPUT:
-        return frame.gate_high[digital_input_index()];
+        return HS::frame.gate_high[digital_input_index()];
       case CV_OUTPUT:
-        return frame.outputs[cv_output_index()] > GATE_THRESHOLD;
+        return HS::frame.outputs[cv_output_index()] > HS::GATE_THRESHOLD;
       case NONE:
       default:
         return false;
@@ -139,7 +139,7 @@ struct DigitalInputMap {
   uint8_t const* Icon() const {
     switch (source_type()) {
       case CLOCK:
-        return clock_m.cycle ? METRO_L_ICON : METRO_R_ICON;
+        return HS::clock_m.cycle ? METRO_L_ICON : METRO_R_ICON;
       case DIGITAL_INPUT:
         return DIGITAL_INPUT_ICONS + digital_input_index() * 8;
       case CV_OUTPUT:
@@ -190,3 +190,7 @@ constexpr DigitalInputMap& pack(DigitalInputMap& input) {
   return input;
 }
 
+namespace HS {
+  extern DigitalInputMap trigmap[ADC_CHANNEL_LAST];
+  extern CVInputMap cvmap[ADC_CHANNEL_LAST];
+}

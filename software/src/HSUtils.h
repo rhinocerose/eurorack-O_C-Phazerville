@@ -229,12 +229,12 @@ namespace HS {
 
   extern int select_mode;
   extern bool cursor_wrap;
-
   extern bool auto_save_enabled;
-  extern int trigger_mapping[ADC_CHANNEL_LAST];
-  extern int cvmapping[ADC_CHANNEL_LAST];
   extern uint8_t trig_length;
   extern uint8_t screensaver_mode;
+
+  extern int trigger_mapping[ADC_CHANNEL_LAST];
+  extern int cvmapping[ADC_CHANNEL_LAST];
 
   extern OC::menu::ScreenCursor<5> showhide_cursor;
 

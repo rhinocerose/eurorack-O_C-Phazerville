@@ -44,6 +44,8 @@ namespace HS {
   int trigger_mapping[APPLET_SLOTS * 2] = { 1, 2, 3, 4 };
   int cvmapping[APPLET_SLOTS * 2] = { 1, 2, 3, 4 };
 #endif
+  DigitalInputMap trigmap[ADC_CHANNEL_LAST];
+  CVInputMap cvmap[ADC_CHANNEL_LAST];
   uint8_t trig_length = 10; // in ms, multiplier for HEMISPHERE_CLOCK_TICKS
   uint8_t screensaver_mode = 3; // 0 = blank, 1 = Meters, 2 = Scope/Zaps, 3 = Zips/Stars
 

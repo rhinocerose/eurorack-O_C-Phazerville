@@ -55,6 +55,17 @@ class HSApplication {
 public:
     bool isEditing = false;
 
+    inline bool EditMode() {
+        return isEditing;
+    }
+    void CursorToggle() {
+      isEditing ^= 1;
+      ResetCursor();
+    }
+    void CancelEdit() {
+      isEditing = false;
+    }
+
     virtual void Start() = 0;
     virtual void Controller() = 0;
     virtual void View() = 0;
@@ -133,13 +144,7 @@ public:
     }
 
     int In(int ch) {
-        const int c = cvmapping[ch];
-        if (!c) return 0;
-        return (c <= ADC_CHANNEL_LAST)
-          ? frame.inputs[c - 1]
-          : (c - ADC_CHANNEL_LAST <= DAC_CHANNEL_LAST)
-            ? frame.outputs[c - 1 - ADC_CHANNEL_LAST]
-            : frame.MIDIState.mapping[c - 1 - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST].output;
+      return cvmap[ch].In();
     }
 
     // Apply small center detent to input, so it reads zero before a threshold
@@ -241,7 +246,103 @@ public:
       }
     }
 
+    bool EditInputMap(CVInputMap& input_map) {
+      if (!IsEditingInputMap()) {
+        selected_input_map = &input_map;
+        return true;
+      }
+      return false;
+    }
+
+    bool EditInputMap(DigitalInputMap& input_map) {
+      if (!IsEditingInputMap()) {
+        selected_input_map = &input_map;
+        return true;
+      }
+      return false;
+    }
+
+    void ClearEditInputMap() {
+      selected_input_map = std::monostate{};
+      if (EditMode()) CursorToggle();
+    }
+
+    bool EditSelectedInputMap(int direction) {
+      if (IsEditingInputMap()) {
+        switch (selected_input_map.index()) {
+          case CV_INPUT_MAP: {
+            int8_t& att
+              = std::get<CVInputMap*>(selected_input_map)->attenuversion;
+            att = constrain(att + direction, -127, 127); // 448% range
+            break;
+          }
+          case DIGITAL_INPUT_MAP: {
+            int8_t& div
+              = std::get<DigitalInputMap*>(selected_input_map)->division;
+            div = constrain(div + direction, -64, 64);
+            break;
+          }
+          default:
+            break;
+        }
+        return true;
+      }
+      return false;
+    }
+
+    void gfxDisplayInputMapEditor(weegfx::coord_t x_off = 0) {
+      if (selected_input_map.index()) {
+        graphics.clearRect(x_off, 0, 63, 11);
+        switch (selected_input_map.index()) {
+          case CV_INPUT_MAP: {
+            gfxPos(32 - 7 * 6 / 2, 2);
+            int tenths = std::get<CVInputMap*>(selected_input_map)->Atten();
+            graphics.printf("%4d.%d%%", tenths / 10, abs(tenths) % 10);
+            break;
+          }
+          case DIGITAL_INPUT_MAP: {
+            gfxPos(32 - 4 * 6 / 2, 2);
+            int8_t div = std::get<DigitalInputMap*>(selected_input_map)->division;
+            if (div < 0) graphics.printf("/%3d", -div + 1);
+            else graphics.printf("X%3d", div + 1);
+            break;
+          }
+          default:
+            break;
+        }
+        gfxInvert(0, 0, 63, 11);
+      }
+    }
+
+    bool IsEditingInputMap() const {
+      return selected_input_map.index() > 0;
+    }
+
+    template <typename... Pairs>
+    bool CheckEditInputMapPress(int cursor, Pairs&&... indexed_input_maps) {
+      if (IsEditingInputMap()) {
+        ClearEditInputMap();
+        return !EditMode();
+      } else if (!EditMode()) {
+        return false;
+      }
+
+      return (
+        ...
+        || (cursor == indexed_input_maps.first ? EditInputMap(indexed_input_maps.second) : false)
+      );
+    }
+
 protected:
+    enum SelectedInputMapType {
+      NONE,
+      CV_INPUT_MAP,
+      DIGITAL_INPUT_MAP,
+    };
+
+    std::variant<std::monostate, CVInputMap*, DigitalInputMap*>
+      selected_input_map;
+
     // Check cursor blink cycle
     bool CursorBlink() {
         return (cursor_countdown > 0);

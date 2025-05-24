@@ -150,7 +150,7 @@ public:
       uint16_t trigmap = 0;
       for (size_t i = 0; i < 4; ++i) {
         trigmap |= (uint16_t(HS::trigger_mapping[i] + 1) & 0x0F) << (i*4);
-        cvmap |= (uint16_t(HS::cvmapping[i] + 1) & 0x0F) << (i*4);
+        cvmap |= (uint16_t(HS::cvmap[i].source) & 0x0F) << (i*4);
       }
 
       bool changed = (uint16_t(values_[HEMISPHERE_TRIGMAP]) != trigmap)
@@ -168,7 +168,7 @@ public:
 
         val = (uint16_t(values_[HEMISPHERE_CVMAP]) >> (i*4)) & 0x0F;
         if (val != 0)
-          HS::cvmapping[i] = constrain(val - 1, 0, CVMAP_MAX);
+          HS::cvmap[i].source = constrain(val - 1, 0, CVMAP_MAX);
       }
     }
 
@@ -392,7 +392,7 @@ public:
         uint64_t data = 0;
         for (size_t i = 0; i < 4; ++i) {
           Pack(data, PackLocation{0 + i*16, 4}, HS::trigger_mapping[i] + 1);
-          Pack(data, PackLocation{4 + i*16, 4}, HS::cvmapping[i] + 1);
+          Pack(data, PackLocation{4 + i*16, 4}, HS::cvmap[i].source);
           Pack(data, PackLocation{8 + i*16, 8}, HS::frame.clockskip[i]);
         }
         PhzConfig::setValue(preset_key | INPUT_MAP_KEY, data);
@@ -476,7 +476,7 @@ public:
           if (val != 0) HS::trigger_mapping[i] = constrain(val - 1, 0, TRIGMAP_MAX);
 
           val = Unpack(data, PackLocation{4 + i*16, 4});
-          if (val != 0) HS::cvmapping[i] = constrain(val - 1, 0, CVMAP_MAX);
+          if (val != 0) HS::cvmap[i].source = constrain(val - 1, 0, CVMAP_MAX);
 
           HS::frame.clockskip[i] = Unpack(data, PackLocation{8 + i*16, 8});
         }
@@ -968,9 +968,7 @@ public:
               }
               case 3:
               case 4:
-                HS::cvmapping[zoom_slot*2 + zoom_cursor - 3] =
-                  constrain( HS::cvmapping[zoom_slot*2 + zoom_cursor - 3] + event.value,
-                      0, CVMAP_MAX);
+                HS::cvmap[zoom_slot*2 + zoom_cursor - 3].ChangeSource(event.value);
                 break;
               case 5:
               case 6:
@@ -1159,7 +1157,7 @@ private:
         case CVMAP2:
         case CVMAP3:
         case CVMAP4:
-            HS::cvmapping[config_cursor-CVMAP1] = constrain( HS::cvmapping[config_cursor-CVMAP1] + dir, 0, CVMAP_MAX);
+            HS::cvmap[config_cursor-CVMAP1].ChangeSource(dir);
             break;
         case TRIG_LENGTH:
             HS::trig_length = (uint32_t) constrain( int(HS::trig_length + dir), 1, 127);
@@ -1282,7 +1280,7 @@ private:
           gfxPrint(4 + ch*32, 25, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch] ] );
 
           // Physical CV input mappings
-          gfxPrint(4 + ch*32, 45, OC::Strings::cv_input_names_none[ HS::cvmapping[ch] ] );
+          gfxPrint(4 + ch*32, 45, HS::cvmap[ch].InputName() );
         }
 
         gfxLine(64, 11, 64, 63);

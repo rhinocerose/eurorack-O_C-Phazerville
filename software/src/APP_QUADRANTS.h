@@ -109,12 +109,13 @@ public:
         OLD_CVMAP_KEY = 4,
         OUTSKIP_KEY = 5,
         TRIGMAP_KEY = 6,
-        CVMAP_KEY = 7,
 
         APPLET_L1_DATA_KEY = 10,
         APPLET_R1_DATA_KEY = 11,
         APPLET_L2_DATA_KEY = 12,
         APPLET_R2_DATA_KEY = 13,
+
+        CVMAP_KEY = 20, // full 16-bit CVInputMap, multiple pages
 
         // 100s = Globals
         FILTERMASK1_KEY = 100,
@@ -150,11 +151,10 @@ public:
         }
         PhzConfig::setValue(preset_key | TRIGMAP_KEY, data);
 
-        data = 0;
-        for (size_t i = 0; i < 8; ++i) {
-          Pack(data, PackLocation{i*8, 8}, HS::cvmapping[i] + 1);
+        for (size_t i = 0; i < ADC_CHANNEL_LAST/4; ++i) {
+          data = PackPackables(HS::cvmap[i], HS::cvmap[i+1], HS::cvmap[i+2], HS::cvmap[i+3]);
+          PhzConfig::setValue(preset_key | (CVMAP_KEY + i), data);
         }
-        PhzConfig::setValue(preset_key | CVMAP_KEY, data);
 
         data = 0;
         for (size_t i = 0; i < 8; ++i) {
@@ -272,12 +272,15 @@ public:
         if (!PhzConfig::getValue(preset_key | CVMAP_KEY, data)) {
           PhzConfig::getValue(preset_key | OLD_CVMAP_KEY, data);
           bitsize = 5;
-        } else
-          bitsize = 8;
-
-        for (size_t i = 0; i < 8; ++i) {
-          const int val = Unpack(data, PackLocation{i*bitsize, bitsize});
-          if (val != 0) HS::cvmapping[i] = constrain(val - 1, 0, CVMAP_MAX);
+          for (size_t i = 0; i < 8; ++i) {
+            const int val = Unpack(data, PackLocation{i*bitsize, bitsize});
+            if (val != 0) HS::cvmap[i].source = constrain(val - 1, 0, CVMAP_MAX);
+          }
+        } else {
+          for (size_t i = 0; i < ADC_CHANNEL_LAST/4; ++i) {
+            UnpackPackables(data, HS::cvmap[i], HS::cvmap[i+1], HS::cvmap[i+2], HS::cvmap[i+3]);
+            PhzConfig::getValue(preset_key | (CVMAP_KEY + i+1), data);
+          }
         }
 
         PhzConfig::getValue(preset_key | OUTSKIP_KEY, data);
@@ -416,6 +419,8 @@ public:
         active_applet[zoom_slot]->BaseView(true, zoom_cursor < 0);
         // Applets 3 and 4 get inverted titles
         if (zoom_slot > 1) gfxInvert(1 + (zoom_slot%2)*64, 1, 63, 10);
+
+        gfxDisplayInputMapEditor();
       }
 
       // draw cursor for editing applet select and input maps
@@ -584,10 +589,16 @@ public:
                 select_mode = zoom_slot;
               break;
             //// 0=select; 1,2=trigmap; 3,4=cvmap; 5,6=outmode
-            case 1:
-            case 2:
             case 3:
             case 4:
+              if (CheckEditInputMapPress(
+                    zoom_cursor,
+                    IndexedInput(3, cvmap[zoom_slot*2]),
+                    IndexedInput(4, cvmap[zoom_slot*2+1])
+                  ))
+                break;
+            case 1:
+            case 2:
             case 5:
             case 6:
             default:
@@ -719,9 +730,8 @@ public:
                 }
                 case 3:
                 case 4:
-                  HS::cvmapping[zoom_slot*2 + zoom_cursor - 3] =
-                    constrain( HS::cvmapping[zoom_slot*2 + zoom_cursor - 3] + event.value,
-                        0, CVMAP_MAX);
+                  if (!EditSelectedInputMap(event.value))
+                    HS::cvmap[zoom_slot*2 + zoom_cursor - 3].ChangeSource(event.value);
                   break;
                 case 5:
                 case 6:
@@ -1049,8 +1059,8 @@ private:
         case CVMAP2:
         case CVMAP3:
         case CVMAP4:
-            HS::cvmapping[config_cursor-CVMAP1] =
-              constrain( HS::cvmapping[config_cursor-CVMAP1] + dir, 0, CVMAP_MAX);
+            if (!EditSelectedInputMap(dir))
+              HS::cvmap[config_cursor-CVMAP1].ChangeSource(dir);
             break;
         case TRIGMAP5:
         case TRIGMAP6:
@@ -1063,8 +1073,8 @@ private:
         case CVMAP6:
         case CVMAP7:
         case CVMAP8:
-            HS::cvmapping[config_cursor-CVMAP5 + 4] =
-              constrain( HS::cvmapping[config_cursor-CVMAP5 + 4] + dir, 0, CVMAP_MAX);
+            if (!EditSelectedInputMap(dir))
+              HS::cvmap[config_cursor-CVMAP5 + 4].ChangeSource(dir);
             break;
         case TRIG_LENGTH:
             HS::trig_length = (uint32_t) constrain( int(HS::trig_length + dir), 1, 127);
@@ -1141,14 +1151,6 @@ private:
             HS::QuantizerEdit(config_cursor - QUANT1);
             break;
 
-        case TRIGMAP1:
-        case TRIGMAP2:
-        case TRIGMAP3:
-        case TRIGMAP4:
-        case TRIGMAP5:
-        case TRIGMAP6:
-        case TRIGMAP7:
-        case TRIGMAP8:
         case CVMAP1:
         case CVMAP2:
         case CVMAP3:
@@ -1157,6 +1159,26 @@ private:
         case CVMAP6:
         case CVMAP7:
         case CVMAP8:
+          if (CheckEditInputMapPress(
+                config_cursor,
+                IndexedInput(CVMAP1, cvmap[0]),
+                IndexedInput(CVMAP2, cvmap[1]),
+                IndexedInput(CVMAP3, cvmap[2]),
+                IndexedInput(CVMAP4, cvmap[3]),
+                IndexedInput(CVMAP5, cvmap[4]),
+                IndexedInput(CVMAP6, cvmap[5]),
+                IndexedInput(CVMAP7, cvmap[6]),
+                IndexedInput(CVMAP8, cvmap[7])
+              ))
+            break;
+        case TRIGMAP1:
+        case TRIGMAP2:
+        case TRIGMAP3:
+        case TRIGMAP4:
+        case TRIGMAP5:
+        case TRIGMAP6:
+        case TRIGMAP7:
+        case TRIGMAP8:
         case TRIG_LENGTH:
         case MIDI_PC_CHANNEL:
             isEditing = !isEditing;
@@ -1200,11 +1222,11 @@ private:
           // Physical CV input mappings
           // Top 2 applets
           gfxPrint(4 + ch*32, 15, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch] ] );
-          gfxPrint(4 + ch*32, 28, OC::Strings::cv_input_names_none[ HS::cvmapping[ch] ] );
+          gfxPrint(4 + ch*32, 28, HS::cvmap[ch].InputName() );
 
           // Bottom 2 applets
           gfxPrint(4 + ch*32, 41, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch + 4] ] );
-          gfxPrint(4 + ch*32, 54, OC::Strings::cv_input_names_none[ HS::cvmapping[ch + 4] ] );
+          gfxPrint(4 + ch*32, 54, HS::cvmap[ch + 4].InputName() );
         }
 
         gfxDottedLine(63, 11, 63, 63); // vert
@@ -1216,6 +1238,7 @@ private:
 
         gfxCursor(4 + 32*cur_x, 23 + 13*cur_y, 19);
 
+        gfxDisplayInputMapEditor();
     }
     void DrawQuantizerConfig() {
         gfxHeader("<  Quantizer Setup");

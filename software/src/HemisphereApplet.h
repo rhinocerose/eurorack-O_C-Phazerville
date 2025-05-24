@@ -145,7 +145,7 @@ public:
           y += 10;
 
           graphics.setPrintPos(ch*64, y);
-          graphics.print( OC::Strings::cv_input_names_none[ HS::cvmapping[ch + io_offset] ] );
+          graphics.print( cvmap[ch+io_offset].InputName() );
           graphics.invertRect(ch*64, y - 1, 19, 9);
 
           graphics.setPrintPos(ch*64 + 20, y);
@@ -207,13 +207,7 @@ public:
     //////////////// Offset I/O methods
     ////////////////////////////////////////////////////////////////////////////////
     int In(const int ch) {
-        const int c = cvmapping[ch + io_offset];
-        if (!c) return 0;
-        return (c <= ADC_CHANNEL_LAST)
-          ? frame.inputs[c - 1]
-          : (c - ADC_CHANNEL_LAST <= DAC_CHANNEL_LAST)
-            ? frame.outputs[c - 1 - ADC_CHANNEL_LAST]
-            : frame.MIDIState.mapping[c - 1 - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST].output;
+      return cvmap[ch + io_offset].In();
     }
 
     #ifdef ARDUINO_TEENSY41
@@ -226,14 +220,6 @@ public:
     int DetentedIn(int ch) {
         return (In(ch) > (HEMISPHERE_CENTER_CV + HEMISPHERE_CENTER_DETENT) || In(ch) < (HEMISPHERE_CENTER_CV - HEMISPHERE_CENTER_DETENT))
             ? In(ch) : HEMISPHERE_CENTER_CV;
-    }
-    int SmoothedIn(int ch) {
-      const int x = cvmapping[ch + io_offset];
-      if (x && x <= ADC_CHANNEL_LAST) {
-        ADC_CHANNEL channel = (ADC_CHANNEL)( x - 1 );
-        return OC::ADC::value(channel);
-      }
-      return 0;
     }
     int SemitoneIn(int ch) {
       return input_quant[ch].Process(In(ch));
