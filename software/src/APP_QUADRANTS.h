@@ -108,14 +108,15 @@ public:
         OLD_TRIGMAP_KEY = 3,
         OLD_CVMAP_KEY = 4,
         OUTSKIP_KEY = 5,
-        TRIGMAP_KEY = 6,
 
         APPLET_L1_DATA_KEY = 10,
         APPLET_R1_DATA_KEY = 11,
         APPLET_L2_DATA_KEY = 12,
         APPLET_R2_DATA_KEY = 13,
 
-        CVMAP_KEY = 20, // full 16-bit CVInputMap, multiple pages
+        CVMAP_KEY = 20, // 16-bit CVInputMap, multiple pages
+
+        TRIGMAP_KEY = 30, // 16-bit DigitalInputMap
 
         // 100s = Globals
         FILTERMASK1_KEY = 100,
@@ -146,12 +147,10 @@ public:
 
         uint64_t data = 0;
         // Input Mappings
-        for (size_t i = 0; i < 8; ++i) {
-          Pack(data, PackLocation{i*8, 8}, HS::trigger_mapping[i] + 1);
-        }
-        PhzConfig::setValue(preset_key | TRIGMAP_KEY, data);
-
         for (size_t i = 0; i < ADC_CHANNEL_LAST/4; ++i) {
+          data = PackPackables(HS::trigmap[i], HS::trigmap[i+1], HS::trigmap[i+2], HS::trigmap[i+3]);
+          PhzConfig::setValue(preset_key | (TRIGMAP_KEY + i), data);
+
           data = PackPackables(HS::cvmap[i], HS::cvmap[i+1], HS::cvmap[i+2], HS::cvmap[i+3]);
           PhzConfig::setValue(preset_key | (CVMAP_KEY + i), data);
         }
@@ -259,19 +258,23 @@ public:
         ClockSetup_instance.SetGlobals(global_data);
 
         // Input Mappings
-        size_t bitsize = 8;
         if (!PhzConfig::getValue(preset_key | TRIGMAP_KEY, data)) {
           PhzConfig::getValue(preset_key | OLD_TRIGMAP_KEY, data);
-          bitsize = 5;
-        }
-        for (size_t i = 0; i < 8; ++i) {
-          const int val = Unpack(data, PackLocation{i*bitsize, bitsize});
-          if (val != 0) HS::trigger_mapping[i] = constrain(val - 1, 0, TRIGMAP_MAX);
+          const size_t bitsize = 5;
+          for (size_t i = 0; i < 8; ++i) {
+            const int val = Unpack(data, PackLocation{i*bitsize, bitsize});
+            if (val != 0) HS::trigmap[i].source = constrain(val - 1, 0, TRIGMAP_MAX);
+          }
+        } else {
+          for (size_t i = 0; i < ADC_CHANNEL_LAST/4; ++i) {
+            UnpackPackables(data, HS::trigmap[i], HS::trigmap[i+1], HS::trigmap[i+2], HS::trigmap[i+3]);
+            PhzConfig::getValue(preset_key | (TRIGMAP_KEY + i+1), data);
+          }
         }
 
         if (!PhzConfig::getValue(preset_key | CVMAP_KEY, data)) {
           PhzConfig::getValue(preset_key | OLD_CVMAP_KEY, data);
-          bitsize = 5;
+          const size_t bitsize = 5;
           for (size_t i = 0; i < 8; ++i) {
             const int val = Unpack(data, PackLocation{i*bitsize, bitsize});
             if (val != 0) HS::cvmap[i].source = constrain(val - 1, 0, CVMAP_MAX);
@@ -723,9 +726,7 @@ public:
                   {
                     clock_m.SetMultiply(clock_m.GetMultiply(chan) + event.value, chan);
                   } else
-                    HS::trigger_mapping[chan] = constrain(
-                        HS::trigger_mapping[chan] + event.value,
-                        0, TRIGMAP_MAX);
+                    HS::trigmap[chan].ChangeSource(event.value);
                   break;
                 }
                 case 3:
@@ -1052,8 +1053,7 @@ private:
         case TRIGMAP2:
         case TRIGMAP3:
         case TRIGMAP4:
-            HS::trigger_mapping[config_cursor-TRIGMAP1] = constrain(
-                HS::trigger_mapping[config_cursor-TRIGMAP1] + dir, 0, TRIGMAP_MAX);
+            HS::trigmap[config_cursor-TRIGMAP1].ChangeSource(dir);
             break;
         case CVMAP1:
         case CVMAP2:
@@ -1066,8 +1066,7 @@ private:
         case TRIGMAP6:
         case TRIGMAP7:
         case TRIGMAP8:
-            HS::trigger_mapping[config_cursor-TRIGMAP5 + 4] = constrain(
-                HS::trigger_mapping[config_cursor-TRIGMAP5 + 4] + dir, 0, TRIGMAP_MAX);
+            HS::trigmap[config_cursor-TRIGMAP5 + 4].ChangeSource(dir);
             break;
         case CVMAP5:
         case CVMAP6:
@@ -1221,11 +1220,11 @@ private:
           // Physical trigger input mappings
           // Physical CV input mappings
           // Top 2 applets
-          gfxPrint(4 + ch*32, 15, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch] ] );
+          gfxPrint(4 + ch*32, 15, HS::trigmap[ch].InputName() );
           gfxPrint(4 + ch*32, 28, HS::cvmap[ch].InputName() );
 
           // Bottom 2 applets
-          gfxPrint(4 + ch*32, 41, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch + 4] ] );
+          gfxPrint(4 + ch*32, 41, HS::trigmap[ch + 4].InputName() );
           gfxPrint(4 + ch*32, 54, HS::cvmap[ch + 4].InputName() );
         }
 
