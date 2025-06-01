@@ -494,6 +494,8 @@ void Init(bool reset_settings) {
   for (auto &app : available_apps)
     app.Init();
 
+  HS::frame.Init();
+
   global_settings.current_app_id = DEFAULT_APP_ID;
   global_settings.encoders_enable_acceleration = OC_ENCODERS_ENABLE_ACCELERATION_DEFAULT;
   global_settings.reserved0 = false;

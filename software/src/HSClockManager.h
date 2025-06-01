@@ -174,11 +174,9 @@ public:
     }
 
     // call this on every tick when clock is running, before all Controllers
-    void SyncTrig(bool clocked, bool hard_reset = false) {
-        //if (!IsRunning()) return;
-        if (hard_reset) Reset();
-
+    void SyncTrig(bool clocked, bool midi_sync = false) {
         const uint32_t now = OC::CORE::ticks;
+        const int ppqn = (midi_sync) ? 24 : clock_ppqn;
 
         // Reset only when all multipliers have been met
         bool reset = 1;
@@ -223,12 +221,12 @@ public:
         if (beatsync) ProcessBeatSync();
 
         // handle syncing to physical clocks
-        if (clocked && clock_tick[tickno] && clock_ppqn) {
+        if (clocked && clock_tick[tickno] && ppqn) {
 
             uint32_t clock_diff = now - clock_tick[tickno];
 
             // too slow, reset clock tracking
-            if (clock_ppqn * clock_diff > CLOCK_TICKS_MAX) {
+            if (ppqn * clock_diff > CLOCK_TICKS_MAX) {
                 clock_tick[0] = 0;
                 clock_tick[1] = 0;
             }
@@ -238,10 +236,10 @@ public:
                 uint32_t avg_diff = (clock_diff + (clock_tick[tickno] - clock_tick[1-tickno])) / 2;
 
                 // update the tempo
-                ticks_per_beat = constrain(clock_ppqn * avg_diff, CLOCK_TICKS_MIN, CLOCK_TICKS_MAX);
+                ticks_per_beat = constrain(ppqn * avg_diff, CLOCK_TICKS_MIN, CLOCK_TICKS_MAX);
                 tempo_setting = tempo = 1000000 / ticks_per_beat; // imprecise, for display purposes
 
-                int ticks_per_clock = ticks_per_beat / clock_ppqn; // rounded down
+                int ticks_per_clock = ticks_per_beat / ppqn; // rounded down
 
                 // time since last beat
                 int tick_offset = now - beat_tick;
@@ -261,7 +259,7 @@ public:
             tickno = 1 - tickno;
             clock_tick[tickno] = now;
         }
-        else if (extsync && clock_ppqn && now - clock_tick[tickno] > ticks_per_beat * 2 / clock_ppqn) {
+        else if (extsync && ppqn && now - clock_tick[tickno] > ticks_per_beat * 2 / ppqn) {
           // auto-stop
           Stop();
           Start(true); // re-arm

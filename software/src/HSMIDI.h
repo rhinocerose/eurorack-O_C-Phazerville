@@ -54,8 +54,6 @@ extern midi::MidiInterface<midi::SerialMIDI<HardwareSerial> > MIDI1;
 #define HEM_MIDI_START usbMIDI.Start
 #define HEM_MIDI_STOP usbMIDI.Stop
 
-#define HEM_MIDI_CLOCK_DIVISOR 6
-
 const char* const midi_note_numbers[128] = {
     "C-1","C#-1","D-1","D#-1","E-1","F-1","F#-1","G-1","G#-1","A-1","A#-1","B-1",
     "C0","C#0","D0","D#0","E0","F0","F#0","G0","G#0","A0","A#0","B0",
@@ -71,8 +69,8 @@ const char* const midi_note_numbers[128] = {
 };
 
 const char* const midi_channels[17] = {
-    "Off", " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8",
-    " 9", "10", "11", "12", "13", "14", "15", "16"
+    " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8",
+    " 9", "10", "11", "12", "13", "14", "15", "16", "Om"
 };
 
 // The functions available for each output
@@ -104,11 +102,14 @@ enum MIDIFunctions : uint8_t {
 
     HEM_MIDI_PB_OUT,
 
-    HEM_MIDI_CLOCK_OUT,
     HEM_MIDI_RUN_OUT,
     HEM_MIDI_START_OUT,
+    HEM_MIDI_CLOCK_OUT, // quarter note
+    HEM_MIDI_CLOCK_8_OUT,
+    HEM_MIDI_CLOCK_16_OUT,
+    HEM_MIDI_CLOCK_24_OUT, // full 24ppqn
 
-    HEM_MIDI_MAX_FUNCTION = HEM_MIDI_START_OUT
+    HEM_MIDI_MAX_FUNCTION = HEM_MIDI_CLOCK_24_OUT
 };
 const char* const midi_fn_name[HEM_MIDI_MAX_FUNCTION + 1] = {
     "None",
@@ -119,7 +120,8 @@ const char* const midi_fn_name[HEM_MIDI_MAX_FUNCTION + 1] = {
     "CC#",
     "ChnAft", "KeyAft",
     "Bend",
-    "Clock", "Run", "Start"
+    "Run", "Start",
+    "Clk-4", "Clk-8", "Clk16", "Clk24",
 };
 
 enum MIDIPolyMode : uint8_t {

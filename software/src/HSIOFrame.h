@@ -44,23 +44,61 @@ struct MIDIMapping {
   uint8_t function;
   uint8_t channel; // MIDI channel number
   uint8_t dac_polyvoice; // select which voice to send from output
+  int8_t transpose;
+  uint8_t range_low, range_high;
 
-  static constexpr size_t Size = 32; // Make this compatible with Packable
+  static constexpr size_t Size = 64; // Make this compatible with Packable
 
   // state
   bool trigout_q; // TRIGGA
   uint16_t semitone_mask; // which notes are currently on
   int16_t output; // translated CV values
 
-  uint32_t Pack() const {
-    return (function_cc & 0xFF) | (function << 8) | (channel << 16) | (dac_polyvoice << 24);
+  const bool IsClock() const {
+    return (function >= HEM_MIDI_CLOCK_OUT);
   }
-  void Unpack(uint32_t data) {
-    function_cc = data & 0xFF;
-    function = (data >> 8) & 0xFF;
+  const bool IsTrigger() const {
+    return (function == HEM_MIDI_TRIG_OUT
+         || function == HEM_MIDI_TRIG_1ST_OUT
+         || function == HEM_MIDI_TRIG_ALWAYS_OUT
+         || function == HEM_MIDI_START_OUT
+         || IsClock());
+  }
+  constexpr int clock_mod() const {
+    uint8_t mod = 1;
+    if (function == HEM_MIDI_CLOCK_OUT) mod = 24;
+    if (function == HEM_MIDI_CLOCK_8_OUT) mod = 12;
+    if (function == HEM_MIDI_CLOCK_16_OUT) mod = 6;
+    return mod;
+  }
+  void ProcessClock(int count) {
+    if (IsClock() && (count % clock_mod() == 1))
+      trigout_q = 1;
+  }
+  const bool InRange(uint8_t note) const {
+    return (note >= range_low && note <= range_high);
+  }
+
+  void AdjustTranspose(int dir) {
+    transpose = constrain(transpose + dir, -24, 24);
+  }
+  void AdjustRangeLow(int dir) {
+    range_low = constrain(range_low + dir, 0, range_high);
+  }
+  void AdjustRangeHigh(int dir) {
+    range_high = constrain(range_high + dir, range_low, 127);
+  }
+  uint64_t Pack() const {
+    return PackPackables(function_cc, function, channel, dac_polyvoice, transpose, range_low, range_high);
+  }
+  void Unpack(uint64_t data) {
+    UnpackPackables(data, function_cc, function, channel, dac_polyvoice, transpose, range_low, range_high);
+    // validation for safety
     if (function > HEM_MIDI_MAX_FUNCTION) function = 0;
-    channel = (data >> 16) & 0x1F;
-    dac_polyvoice = (data >> 24) & 0x0F;
+    channel &= 0x1F;
+    dac_polyvoice &= 0x0F;
+    if (range_low == 0 && range_high == 0) range_high = 127;
+    if (range_high < range_low) range_high = range_low;
   }
 };
 
@@ -73,6 +111,7 @@ using NoteBuffer = std::vector<MIDINoteData>;
 
 struct MIDIFrame {
     MIDIMapping mapping[MIDIMAP_MAX];
+    MIDIMapping outmap[ADC_CHANNEL_COUNT];
 
     // MIDI input stuff handled by MIDIIn applet
     NoteBuffer note_buffer[16]; // note buffer to track all held notes on all channels
@@ -89,6 +128,60 @@ struct MIDIFrame {
     uint16_t midi_channel_filter = 0; // each bit state represents a channel. 1 means enabled. all 0's means Omni (no channel filter)
     bool any_channel_omni = false;
 
+    // Clock/Start/Stop are handled by ClockSetup applet
+    bool clock_run = 0;
+    bool clock_q;
+    bool start_q;
+    bool stop_q;
+    uint8_t clock_count; // MIDI clock counter (24ppqn)
+    uint32_t last_msg_tick; // Tick of last received message
+
+    void Init() {
+      for (int ch = 0; ch < MIDIMAP_MAX; ++ch) {
+        mapping[ch].function = 0;
+        mapping[ch].transpose = 0;
+        mapping[ch].output = 0;
+        mapping[ch].dac_polyvoice = ch / 2 % DAC_CHANNEL_COUNT; // each quad is a unique voice
+        mapping[ch].range_low = 0;
+        mapping[ch].range_high = 127;
+      }
+      for (int ch = 0; ch < ADC_CHANNEL_COUNT; ++ch) {
+        outmap[ch].function = 0;
+        outmap[ch].transpose = 0;
+        outmap[ch].output = 0;
+        outmap[ch].range_low = 0;
+        outmap[ch].range_high = 127;
+      }
+      clock_count = 0;
+    }
+
+    // getters for access to mappings
+    uint8_t get_in_assign(int ch) {
+      return mapping[ch].function;
+    }
+    uint8_t get_in_channel(int ch) {
+      return mapping[ch].channel;
+    }
+    int8_t get_in_transpose(int ch) {
+      return mapping[ch].transpose;
+    }
+    bool in_in_range(int ch, uint8_t note) {
+      return mapping[ch].InRange(note);
+    }
+
+    uint8_t get_out_assign(int ch) {
+      return outmap[ch].function;
+    }
+    uint8_t get_out_channel(int ch) {
+      return outmap[ch].channel;
+    }
+    int8_t get_out_transpose(int ch) {
+      return outmap[ch].transpose;
+    }
+    bool in_out_range(int ch, int note) {
+      return (note >= outmap[ch].range_low && note <= outmap[ch].range_high);
+    }
+
     void UpdateMidiChannelFilter() {
         uint16_t filter = 0;
         bool omni = false;
@@ -102,7 +195,7 @@ struct MIDIFrame {
     }
 
     bool CheckMidiChannelFilter(const uint8_t m_ch) {
-        return midi_channel_filter & (1 << m_ch);
+        return any_channel_omni || midi_channel_filter & (1 << m_ch);
     }
 
     void UpdateMaxPolyphony() { // find max voice number to determine how much to buffer
@@ -165,12 +258,12 @@ struct MIDIFrame {
     }
 
     void PolyBufferPush(const uint8_t m_ch, const uint8_t note, const uint8_t vel) {
-        if (CheckMidiChannelFilter(m_ch) || any_channel_omni)
+        if (CheckMidiChannelFilter(m_ch))
             WritePolyNoteData(note, vel, FindNextAvailPolyVoice(note));
     }
 
     void PolyBufferPop(const uint8_t m_ch, const uint8_t note) {
-        if (CheckMidiChannelFilter(m_ch) || any_channel_omni) {
+        if (CheckMidiChannelFilter(m_ch)) {
             for (uint8_t v = 0; v < max_voice; ++v) {
                 if (poly_buffer[v].note == note) ClearPolyVoice(v);
             }
@@ -193,14 +286,14 @@ struct MIDIFrame {
     }
 
     void MonoBufferPush(const uint8_t m_ch, const uint8_t note, const uint8_t vel) {
-        if (CheckMidiChannelFilter(m_ch) || any_channel_omni) {
+        if (CheckMidiChannelFilter(m_ch)) {
             RemoveNoteData(note_buffer[m_ch], note); // if new note is already in buffer, promote to latest and update velocity
             note_buffer[m_ch].push_back({note, vel}); // else just append to the end
         }
     }
 
     void MonoBufferPop(const uint8_t m_ch, const uint8_t note) {
-        if (CheckMidiChannelFilter(m_ch) || any_channel_omni) {
+        if (CheckMidiChannelFilter(m_ch)) {
             RemoveNoteData(note_buffer[m_ch], note);
             if (note_buffer[m_ch].size() == 0) note_buffer[m_ch].shrink_to_fit(); // free up memory when MIDI is not used
         }
@@ -266,14 +359,6 @@ struct MIDIFrame {
         return sustain_latch & (1 << m_ch);
     }
 
-    // Clock/Start/Stop are handled by ClockSetup applet
-    bool clock_run = 0;
-    bool clock_q;
-    bool start_q;
-    bool stop_q;
-    uint8_t clock_count; // MIDI clock counter (24ppqn)
-    uint32_t last_msg_tick; // Tick of last received message
-
     // MIDI output stuff
     int outchan[DAC_CHANNEL_COUNT] = {
         0, 0, 1, 1,
@@ -325,18 +410,19 @@ struct MIDIFrame {
         last_msg_tick = OC::CORE::ticks;
     }
 
+    // arguments are raw data from MIDI system, so midi_chan starts at 1 (not 0)
     void ProcessMIDIMsg(const uint8_t midi_chan, const uint8_t message, const uint8_t data1, const uint8_t data2) {
+        const uint8_t m_ch = midi_chan - 1;
+        if (!CheckMidiChannelFilter(m_ch)) return;
+
         switch (message) {
             case usbMIDI.Clock:
-                if (++clock_count == 1) {
-                    clock_q = 1;
-                    for(int ch = 0; ch < MIDIMAP_MAX; ++ch) {
-                        if (mapping[ch].function == HEM_MIDI_CLOCK_OUT) {
-                            mapping[ch].trigout_q = 1;
-                        }
-                    }
+                clock_q = 1;
+                ++clock_count;
+                for(int ch = 0; ch < MIDIMAP_MAX; ++ch) {
+                  mapping[ch].ProcessClock(clock_count);
                 }
-                if (clock_count == HEM_MIDI_CLOCK_DIVISOR) clock_count = 0;
+                if (clock_count == 24) clock_count = 0;
                 return;
                 break;
 
@@ -372,13 +458,13 @@ struct MIDIFrame {
                 break;
 
             case usbMIDI.NoteOn:
-                MonoBufferPush(midi_chan-1, data1, data2);
-                PolyBufferPush(midi_chan-1, data1, data2);
+                MonoBufferPush(m_ch, data1, data2);
+                PolyBufferPush(m_ch, data1, data2);
                 break;
 
             case usbMIDI.NoteOff:
-                MonoBufferPop(midi_chan-1, data1);
-                PolyBufferPop(midi_chan-1, data1);
+                MonoBufferPop(m_ch, data1);
+                PolyBufferPop(m_ch, data1);
                 break;
         }
 
@@ -390,7 +476,6 @@ struct MIDIFrame {
             if (map.function == HEM_MIDI_NOOP) continue;
 
             // skip unwanted MIDI Channels
-            uint8_t m_ch = midi_chan - 1;
             if (map.channel != m_ch && map.channel != 16) continue;
 
             last_midi_channel = m_ch;
@@ -404,6 +489,7 @@ struct MIDIFrame {
 
             switch (message) {
                 case usbMIDI.NoteOn: {
+                    if (!map.InRange(data1)) break;
                     map.semitone_mask = map.semitone_mask | (1u << (data1 % 12));
 
                     // Should this message go out on this channel?
@@ -455,6 +541,7 @@ struct MIDIFrame {
                     break;
                 }
                 case usbMIDI.NoteOff: {
+                    if (!map.InRange(data1)) break;
                     map.semitone_mask = map.semitone_mask & ~(1u << (data1 % 12));
 
                     if (note_buffer[m_ch].size() > 0) { // don't update output when last note is released
@@ -707,6 +794,10 @@ struct IOFrame {
 
     /* MIDI message queue/cache */
     MIDIFrame MIDIState;
+
+    void Init() {
+      MIDIState.Init();
+    }
 
     // --- Soft IO ---
     void Out(DAC_CHANNEL channel, int value) {

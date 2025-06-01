@@ -67,11 +67,13 @@ public:
     // The ClockSetup controller handles MIDI Clock and Transport Start/Stop
     void Controller() {
         bool clock_sync = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>();
+        bool midi_sync = false;
 
         // MIDI Clock is filtered to 2 PPQN
         if (frame.MIDIState.clock_q) {
             frame.MIDIState.clock_q = 0;
             clock_sync = 1;
+            midi_sync = 1;
         }
         if (frame.MIDIState.start_q) {
             frame.MIDIState.start_q = 0;
@@ -96,7 +98,7 @@ public:
 
         // Advance internal clock, sync to external clock / reset
         if (HS::clock_m.IsRunning())
-            HS::clock_m.SyncTrig( clock_sync );
+            HS::clock_m.SyncTrig( clock_sync, midi_sync );
 
         // ------------ //
         if (HS::clock_m.IsRunning() && HS::clock_m.MIDITock()) {

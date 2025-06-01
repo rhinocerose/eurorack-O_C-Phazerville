@@ -198,8 +198,8 @@ public:
         }
 
         // Global MIDI Maps
-        for (size_t midx = 0; midx < MIDIMAP_MAX / 2; ++midx) {
-          data = PackPackables(frame.MIDIState.mapping[midx*2], frame.MIDIState.mapping[midx*2+1]);
+        for (size_t midx = 0; midx < MIDIMAP_MAX; ++midx) {
+          data = PackPackables(frame.MIDIState.mapping[midx]);
           PhzConfig::setValue(MIDI_MAPS_KEY + midx, data);
         }
 
@@ -311,12 +311,10 @@ public:
         }
 
         // Global MIDI Maps
-        for (size_t midx = 0; midx < MIDIMAP_MAX / 2; ++midx) {
+        for (size_t midx = 0; midx < MIDIMAP_MAX; ++midx) {
           if (!PhzConfig::getValue(MIDI_MAPS_KEY + midx, data))
               break;
-          UnpackPackables(data,
-              frame.MIDIState.mapping[midx*2],
-              frame.MIDIState.mapping[midx*2+1]);
+          UnpackPackables(data, frame.MIDIState.mapping[midx]);
         }
 
         // User Patterns aka Sequences
