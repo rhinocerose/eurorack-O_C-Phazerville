@@ -28,10 +28,13 @@ using DAC_CHANNEL = int;
 extern DAC_CHANNEL DAC_CHANNEL_A, DAC_CHANNEL_B, DAC_CHANNEL_C, DAC_CHANNEL_D;
 #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
 extern DAC_CHANNEL DAC_CHANNEL_E, DAC_CHANNEL_F, DAC_CHANNEL_G, DAC_CHANNEL_H;
-static constexpr int DAC_CHANNEL_LAST = 8;
+static constexpr int DAC_CHANNEL_COUNT = 8;
 #else
-static constexpr int DAC_CHANNEL_LAST = 4;
+static constexpr int DAC_CHANNEL_COUNT = 4;
 #endif
+
+// backward compat [deprecated]
+static constexpr int DAC_CHANNEL_LAST = DAC_CHANNEL_COUNT;
 
 enum OutputVoltageScaling {
   VOLTAGE_SCALING_1V_PER_OCT,    // 0
@@ -61,10 +64,10 @@ public:
 
   struct CalibrationData {
     // -3V to +6V or 0V to +10V
-    uint16_t calibrated_octaves[DAC_CHANNEL_LAST][OCTAVES + 1];
+    uint16_t calibrated_octaves[DAC_CHANNEL_COUNT][OCTAVES + 1];
 
     // TODO: -10V to +10V for updated hardware
-    //uint16_t calibrated_octaves[DAC_CHANNEL_LAST][2*OCTAVES + 1];
+    //uint16_t calibrated_octaves[DAC_CHANNEL_COUNT][2*OCTAVES + 1];
     // An alternate approach would be to store 16-bit values for one channel,
     // and 8-bit offsets for all other channels
   };
@@ -89,7 +92,7 @@ public:
   static void init_Vbias();
   
   static void set_all(uint32_t value) {
-    for (int i = 0; i < DAC_CHANNEL_LAST; ++i)
+    for (int i = 0; i < DAC_CHANNEL_COUNT; ++i)
       values_[i] = USAT16(value);
   }
 
@@ -219,7 +222,7 @@ public:
 
   // Set all channels to integer voltage value, where 0 = 0V, 1 = 1V
   static void set_all_octave(int v) {
-    for (int i = 0; i < DAC_CHANNEL_LAST; ++i)
+    for (int i = 0; i < DAC_CHANNEL_COUNT; ++i)
       set_octave(DAC_CHANNEL(i), v);
   }
 
@@ -264,7 +267,7 @@ public:
     #endif
 
     size_t tail = history_tail_;
-    for (int i = 0; i < DAC_CHANNEL_LAST; ++i)
+    for (int i = 0; i < DAC_CHANNEL_COUNT; ++i)
       history_[i][tail] = values_[i];
     history_tail_ = (tail + 1) % kHistoryDepth;
   }
@@ -285,10 +288,10 @@ public:
 
 private:
   static CalibrationData *calibration_data_;
-  static uint32_t values_[DAC_CHANNEL_LAST];
-  static uint16_t history_[DAC_CHANNEL_LAST][kHistoryDepth];
+  static uint32_t values_[DAC_CHANNEL_COUNT];
+  static uint16_t history_[DAC_CHANNEL_COUNT][kHistoryDepth];
   static volatile size_t history_tail_;
-  static uint8_t DAC_scaling[DAC_CHANNEL_LAST];
+  static uint8_t DAC_scaling[DAC_CHANNEL_COUNT];
 };
 
 }; // namespace OC
