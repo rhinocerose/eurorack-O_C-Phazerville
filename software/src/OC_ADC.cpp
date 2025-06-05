@@ -14,8 +14,8 @@ namespace OC {
 /*static*/ ::ADC ADC::adc_;
 #endif
 /*static*/ ADC::CalibrationData *ADC::calibration_data_;
-/*static*/ uint32_t ADC::raw_[ADC_CHANNEL_LAST];
-/*static*/ uint32_t ADC::smoothed_[ADC_CHANNEL_LAST];
+/*static*/ uint32_t ADC::raw_[ADC_CHANNEL_COUNT];
+/*static*/ uint32_t ADC::smoothed_[ADC_CHANNEL_COUNT];
 #ifdef OC_ADC_ENABLE_DMA_INTERRUPT
 /*static*/ volatile bool ADC::ready_;
 #endif
@@ -109,8 +109,8 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
   adc_.setSamplingSpeed(kAdcSamplingSpeed);
   adc_.setAveraging(kAdcScanAverages);
 
-  std::fill(raw_, raw_ + ADC_CHANNEL_LAST, 0);
-  std::fill(smoothed_, smoothed_ + ADC_CHANNEL_LAST, 0);
+  std::fill(raw_, raw_ + ADC_CHANNEL_COUNT, 0);
+  std::fill(smoothed_, smoothed_ + ADC_CHANNEL_COUNT, 0);
   std::fill(adcbuffer_0, adcbuffer_0 + DMA_BUF_SIZE, 0);
 
   adc_.enableDMA();
@@ -118,8 +118,8 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
   // magic number to yield 0V reading on non-existent inputs
   // (copied from OC_calibration.cpp)
   static constexpr uint16_t _ADC_OFFSET = (uint16_t)((float)pow(2,OC::ADC::kAdcResolution)*0.6666667f); // ADC offset @2.2V
-  std::fill(raw_, raw_ + ADC_CHANNEL_LAST, _ADC_OFFSET << kAdcSmoothBits);
-  std::fill(smoothed_, smoothed_ + ADC_CHANNEL_LAST, _ADC_OFFSET << kAdcSmoothBits);
+  std::fill(raw_, raw_ + ADC_CHANNEL_COUNT, _ADC_OFFSET << kAdcSmoothBits);
+  std::fill(smoothed_, smoothed_ + ADC_CHANNEL_COUNT, _ADC_OFFSET << kAdcSmoothBits);
 #endif // __IMXRT1062__
 }
 
