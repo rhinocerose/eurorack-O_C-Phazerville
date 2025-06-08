@@ -37,7 +37,7 @@ class TB_3PO: public HemisphereApplet {
 
     enum TB3POCursor {
       LOCK_SEED, DIGIT1, DIGIT2, DIGIT3, DIGIT4,
-      DENSITY, QSELECT, LENGTH,
+      DENSITY, QSELECT, TRANS_MODE, LENGTH,
 
       MAX_CURSOR = LENGTH
     };
@@ -87,10 +87,7 @@ class TB_3PO: public HemisphereApplet {
       Reset();
     }
 
-    transpose_cv = 0;
-    if (DetentedIn(0)) {
-      transpose_cv = SemitoneIn(0) << 7;
-    }
+    transpose_amt = SemitoneIn(0);
 
     if (EditMode() && cursor == 5) density_auto[step] = density_encoder;
     const int den_ = (density_auto_enabled ? density_auto[step] : density_encoder);
@@ -176,7 +173,13 @@ class TB_3PO: public HemisphereApplet {
     DrawGraphics();
   }
 
-  // void OnButtonPress() { }
+  void OnButtonPress() override {
+    if (cursor == TRANS_MODE) {
+      transpose_in_semitones ^= 1;
+    }
+    else
+      CursorToggle();
+  }
 
   void AuxButton() {
     if (cursor == DENSITY) {
@@ -254,6 +257,7 @@ class TB_3PO: public HemisphereApplet {
     //Pack(data, PackLocation { 8, 4 }, GetRootNote(0));
 
     Pack(data, PackLocation { 0, 1 }, lock_seed);
+    Pack(data, PackLocation { 1, 1 }, transpose_in_semitones);
 
     Pack(data, PackLocation { 12, 4 }, density_encoder);
     Pack(data, PackLocation { 16, 16 }, seed);
@@ -268,6 +272,7 @@ class TB_3PO: public HemisphereApplet {
 
   void OnDataReceive(uint64_t data) {
     lock_seed = Unpack(data, PackLocation { 0, 1 });
+    transpose_in_semitones = Unpack(data, PackLocation { 1, 1 });
 
     density_encoder = Unpack(data, PackLocation { 12, 4 });
     seed = Unpack(data, PackLocation { 16, 16 });
@@ -293,7 +298,7 @@ protected:
         //                    "-------" <-- Label size guide
         help[HELP_DIGITAL1] = "Clock";
         help[HELP_DIGITAL2] = "Regen";
-        help[HELP_CV1]      = "Transp";
+        help[HELP_CV1]      = transpose_in_semitones? "Root":"Transp";
         help[HELP_CV2]      = "Density";
         help[HELP_OUT1]     = "Pitch";
         help[HELP_OUT2]     = "Gate";
@@ -306,13 +311,11 @@ private:
   int cursor = 0;
 
   // User settings
-
-  // Bool
   bool manual_reset_flag = 0; // Manual trigger to reset/regen
 
-  // bool 
   int lock_seed; // If 1, the seed won't randomize (and manual editing is enabled)
   bool no_slides = false;
+  bool transpose_in_semitones = false;
 
   uint16_t seed; // The random seed that deterministically builds the sequence
 
@@ -334,7 +337,7 @@ private:
   // Playback
   uint8_t step = 0; // Current sequencer step
 
-  int32_t transpose_cv; // Quantized transpose in cv
+  int32_t transpose_amt; // in semitones or scale degrees
 
   // Generated sequence data
   uint32_t gates = 0; // Bitfield of gates;  ((gates >> step) & 1) means gate
@@ -370,6 +373,11 @@ private:
   int get_pitch_for_step(int step_num) {
     int quant_note = 64 + int(notes[step_num]);
 
+    if (!transpose_in_semitones) {
+      // transpose in scale degrees, proportioned from semitones
+      quant_note += transpose_amt * scale_size / 12;
+    }
+
     // Transpose by one octave up or down if flagged to (note this is one full span of whatever scale is active to give doubling octave behavior)
     if (step_is_oct_up(step_num)) {
       quant_note += scale_size;
@@ -379,11 +387,9 @@ private:
 
     quant_note = constrain(quant_note, 0, 127);
 
-    // Apply semitone transpose after scale lookup - effectively a root note transpose
-    // I previously thought to apply transpose in scale degrees,
-    // but some vocal users prefer it this way. -NJM
-    return HS::QuantizerLookup(qselect, quant_note) + transpose_cv;
-    //return QuantizerLookup(0, 64 );  // Test: note 64 is definitely 0v=c4 if output directly, on ALL scales
+    //return QuantizerLookup(0, 64);  // Test: note 64 is definitely 0v=c4 if output directly, on ALL scales
+
+    return HS::QuantizerLookup(qselect, quant_note) + (transpose_in_semitones * transpose_amt << 7);
   }
 
   int get_semitone_for_step(int step_num) {
@@ -663,9 +669,10 @@ private:
     gfxPrint(14, 37, dens_display);
     if (density_auto_enabled) gfxFrame(8, 35, 16, 11, true);
 
-    if (cursor == QSELECT) {
+    if (cursor == QSELECT || cursor == TRANS_MODE) {
       const char txt[] = { 'Q', char('1' + qselect), '\0' };
-      gfxPrint(44, 31, txt);
+      gfxPrint(44, 26, txt);
+      gfxPrint(38, 36, transpose_in_semitones? "Root":"Deg");
     } else {
       // Show scale and root note like old times
       gfxPrint(38, 26, OC::scale_names_short[HS::GetScale(qselect)]);
@@ -745,7 +752,10 @@ private:
       gfxSpicyCursor(9, 45, 14);
       break;
     case QSELECT:
-      gfxSpicyCursor(44, 39, 13);
+      gfxSpicyCursor(44, 34, 13);
+      break;
+    case TRANS_MODE:
+      gfxIcon(31, 36, RIGHT_ICON);
       break;
     case LENGTH:
       gfxSpicyCursor(20, 54, 12, 8);
