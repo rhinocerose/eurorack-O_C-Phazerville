@@ -140,6 +140,7 @@ AppletRegistry reg{
     DeclareApplet<ASR>{47, 0x09},
     DeclareApplet<AttenuateOffset>{56, 0x10},
     DeclareApplet<Binary>{41, 0x41},
+    DeclareApplet<BitBeat>{79, 0x01},
 #ifdef PEWPEWPEW
     DeclareApplet<BootsNCat>{55, 0x80},
 #endif
@@ -147,7 +148,6 @@ AppletRegistry reg{
     DeclareApplet<BugCrack>{51, 0x80},
     DeclareApplet<Burst>{31, 0x04},
     DeclareApplet<Button>{65, 0x10},
-    DeclareApplet<BitBeat>{79, 0x01},
     DeclareApplet<Calculate>{12, 0x10},
     DeclareApplet<Calibr8>{88, 0x10},
     DeclareApplet<Carpeggio>{32, 0x0a},
