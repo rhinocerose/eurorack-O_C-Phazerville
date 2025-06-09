@@ -113,6 +113,33 @@ public:
         }
     }
 
+    void OnButtonPress() override {
+      if (current_page > 1) {
+        // ZAP MODE!!!
+        current_page = 0;
+        cursor = 0;
+        ForEachChannel(ch) {
+          equation[ch] = random(16);
+          speed[ch] = random(256);
+          pitch[ch] = random(256);
+          p0[ch] = random(256);
+          p1[ch] = random(256);
+          p2[ch] = random(256);
+          loopstart[ch] = random(256);
+          loopend[ch] = random(256);
+          if (loopstart[ch] > loopend[ch]) {
+            loopstart[ch] = loopend[ch];
+          }
+          loopmode[ch] = random(2);
+          stepmode[ch] = random(2);
+        }
+      } else if (cursor == STEPMODE) {
+        stepmode[current_page] ^= 1;
+      } else if (cursor == LOOPMODE) {
+        loopmode[current_page] ^= 1;
+      } else
+        CursorToggle();
+    }
     void OnEncoderMove(int direction) {
         if (!EditMode()) {
             // Handle cursor navigation and page switching
@@ -124,7 +151,7 @@ public:
                     cursor = 0;
                 } else {
                     // Already on page B, stay at last parameter
-                    cursor = CURSOR_LAST;
+                    current_page++; // ZAP MODE
                 }
             } else if (new_cursor < 0) {
                 // Move to previous page if not already on first page
@@ -133,9 +160,9 @@ public:
                     cursor = CURSOR_LAST;
                 } else {
                     // Already on page A, stay at first parameter
-                    cursor = 0;
                 }
             } else {
+                if (current_page > 1) current_page = 1;
                 cursor = new_cursor;
             }
             ResetCursor();
@@ -392,6 +419,22 @@ private:
     void DrawInterface() {
         frame_counter++;
 
+        if (current_page > 1) {
+          static int posx = random(56);
+          static int posy = random(48);
+          static bool blinker = 0;
+          if (!blinker && CursorBlink()) {
+            posx = random(56);
+            posy = random(48);
+          }
+          blinker = CursorBlink();
+          gfxIcon(posx, posy+8, ZAP_ICON);
+          if (blinker) {
+            gfxIcon(posx, posy, DOWN_BTN_ICON);
+            gfxIcon(posx, posy+16, UP_BTN_ICON);
+          }
+          return;
+        }
         const int chan = (hemisphere*2 + current_page);
         gfxPrint((hemisphere & 1)?3:52, 2, OC::Strings::capital_letters[chan]);
 
