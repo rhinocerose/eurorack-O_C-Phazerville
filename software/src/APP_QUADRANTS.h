@@ -381,7 +381,7 @@ public:
                 //continue;
             }
 
-            f.MIDIState.ProcessMIDIMsg(device.getChannel(), message, data1, data2);
+            f.MIDIState.ProcessMIDIMsg({device.getChannel(), message, data1, data2});
             next_device.send(message, data1, data2, device.getChannel(), 0);
             dev3.send((midi::MidiType)message, data1, data2, device.getChannel());
         }

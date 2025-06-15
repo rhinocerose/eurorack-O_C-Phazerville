@@ -96,79 +96,15 @@ public:
     virtual void OnDataReceive(uint64_t data) = 0;
     virtual void OnButtonPress() { CursorToggle(); };
     virtual void OnEncoderMove(int direction) = 0;
+    virtual void Unload() { }
+    virtual void DrawFullScreen() { View(); }
+    virtual void AuxButton() { CancelEdit(); }
 
     void BaseView(bool full_screen = false, bool parked = true);
+    void BaseStart(const HEM_SIDE hemisphere_);
 
-    void BaseStart(const HEM_SIDE hemisphere_) {
-        SetDisplaySide(hemisphere_);
-        ResetCursor();
-        CancelEdit();
-
-        // Maintain previous app state by skipping Start
-        if (!applet_started) {
-            applet_started = true;
-            Start();
-            ForEachChannel(ch) {
-                Out(ch, 0); // reset outputs
-            }
-        }
-    }
-    virtual void Unload() { }
-
-    // Screensavers are deprecated in favor of screen blanking, but the BaseScreensaverView() remains
-    // to avoid breaking applets based on the old boilerplate
-    void BaseScreensaverView() {}
-
-    virtual void DrawFullScreen() { View(); }
     /* Formerly Help Screen */
-    void DrawConfigHelp() {
-        for (int i=0; i<HELP_LABEL_COUNT; ++i) help[i] = "";
-        SetHelp();
-        const bool clockrun = clock_m.IsRunning();
-
-        for (int ch = 0; ch < 2; ++ch) {
-          int y = 14;
-          const int mult = clockrun ? clock_m.GetMultiply(ch + io_offset) : 0;
-
-          graphics.setPrintPos(ch*64, y);
-          if (mult != 0) { // Multipliers
-            graphics.print( (mult > 0) ? "x" : "/" );
-            graphics.print( (mult > 0) ? mult : 1 - mult );
-          } else { // Trigger mapping
-            graphics.print( trigmap[ch + io_offset].InputName() );
-          }
-          graphics.invertRect(ch*64, y - 1, 19, 9);
-
-          graphics.setPrintPos(ch*64 + 20, y);
-          graphics.print( help[HELP_DIGITAL1 + ch] );
-
-          y += 10;
-
-          graphics.setPrintPos(ch*64, y);
-          graphics.print( cvmap[ch+io_offset].InputName() );
-          graphics.invertRect(ch*64, y - 1, 19, 9);
-
-          graphics.setPrintPos(ch*64 + 20, y);
-          graphics.print( help[HELP_CV1 + ch] );
-
-          y += 10;
-
-          graphics.setPrintPos(6 + ch*64, y);
-          graphics.print( OC::Strings::capital_letters[ ch + io_offset ] );
-          graphics.invertRect(ch*64, y - 1, 19, 9);
-
-          graphics.setPrintPos(ch*64 + 20, y);
-          graphics.print( help[HELP_OUT1 + ch] );
-        }
-
-        graphics.setPrintPos(0, 45);
-        graphics.print( help[HELP_EXTRA1] );
-        graphics.setPrintPos(0, 55);
-        graphics.print( help[HELP_EXTRA2] );
-    }
-    virtual void AuxButton() {
-      CancelEdit();
-    }
+    void DrawConfigHelp();
 
     /* Check cursor blink cycle. */
     bool CursorBlink() { return (cursor_countdown[hemisphere] > 0); }
@@ -204,17 +140,16 @@ public:
     }
     bool Changed(int ch) {return frame.changed_cv[io_offset + ch];}
 
-    //////////////// Offset I/O methods
-    ////////////////////////////////////////////////////////////////////////////////
+    // --- CV Input Methods
     int In(const int ch) {
       return cvmap[ch + io_offset].In();
     }
 
-    #ifdef ARDUINO_TEENSY41
+#ifdef __IMXRT1062__
     float InF(int ch) {
         return static_cast<float>(In(ch)) / HEMISPHERE_MAX_INPUT_CV;
     }
-    #endif
+#endif
 
     // Apply small center detent to input, so it reads zero before a threshold
     int DetentedIn(int ch) {
@@ -225,12 +160,17 @@ public:
       return input_quant[ch].Process(In(ch));
     }
 
-    // defined in HemisphereApplet.cpp
-    bool Clock(int ch, bool physical = 0);
-
+    /* Has the specified Digital input been clocked this cycle? (rising edge of a gate)
+     * This is pre-calculated in HS::IOFrame::Load() according to input mappings and internal clock settings
+     */
+    bool Clock(int ch, bool physical = 0) {
+        return frame.clocked[ch + io_offset];
+    }
     bool Gate(int ch) {
         return trigmap[ch + io_offset].Gate();
     }
+
+    // --- CV Output methods
     void Out(int ch, int value, int octave = 0) {
         frame.Out( (DAC_CHANNEL)(ch + io_offset), value + (octave * (12 << 7)));
     }
@@ -245,7 +185,6 @@ public:
     void ClockOut(const int ch, const int ticks = HEMISPHERE_CLOCK_TICKS * trig_length) {
         frame.ClockOut( (DAC_CHANNEL)(io_offset + ch), ticks);
     }
-
     void GateOut(int ch, bool high) {
         Out(ch, 0, (high ? PULSE_VOLTAGE : 0));
     }

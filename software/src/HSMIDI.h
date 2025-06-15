@@ -34,7 +34,6 @@
 // See https://www.pjrc.com/teensy/td_midi.html
 
 #if defined(__IMXRT1062__)
-#define USB_MIDI_HOST
 #include <MIDI.h>
 #include <USBHost_t36.h>
 extern USBHost thisUSB;
@@ -42,17 +41,20 @@ extern MIDIDevice usbHostMIDI;
 extern midi::MidiInterface<midi::SerialMIDI<HardwareSerial> > MIDI1;
 #endif
 
-#define HEM_MIDI_NOTE_ON usbMIDI.NoteOn
-#define HEM_MIDI_NOTE_OFF usbMIDI.NoteOff
-#define HEM_MIDI_CC usbMIDI.ControlChange
-#define HEM_MIDI_AFTERTOUCH_CHANNEL usbMIDI.AfterTouchChannel
-#define HEM_MIDI_AFTERTOUCH_POLY usbMIDI.AfterTouchPoly
-#define HEM_MIDI_PITCHBEND usbMIDI.PitchBend
-#define HEM_MIDI_SYSEX usbMIDI.SystemExclusive
+namespace HS {
 
-#define HEM_MIDI_CLOCK usbMIDI.Clock
-#define HEM_MIDI_START usbMIDI.Start
-#define HEM_MIDI_STOP usbMIDI.Stop
+enum HemMidiType {
+  HEM_MIDI_NOTE_ON = usbMIDI.NoteOn,
+  HEM_MIDI_NOTE_OFF = usbMIDI.NoteOff,
+  HEM_MIDI_CC = usbMIDI.ControlChange,
+  HEM_MIDI_AFTERTOUCH_CHANNEL = usbMIDI.AfterTouchChannel,
+  HEM_MIDI_AFTERTOUCH_POLY = usbMIDI.AfterTouchPoly,
+  HEM_MIDI_PITCHBEND = usbMIDI.PitchBend,
+  HEM_MIDI_SYSEX = usbMIDI.SystemExclusive,
+  HEM_MIDI_CLOCK = usbMIDI.Clock,
+  HEM_MIDI_START = usbMIDI.Start,
+  HEM_MIDI_STOP = usbMIDI.Stop,
+};
 
 const char* const midi_note_numbers[128] = {
     "C-1","C#-1","D-1","D#-1","E-1","F-1","F#-1","G-1","G#-1","A-1","A#-1","B-1",
@@ -135,6 +137,7 @@ const char* const midi_poly_mode_name[POLY_LAST + 1] = {
     "Reset", "Rotate", "Reuse"
 };
 
+} // namespace HS
 
 /* Hemisphere Suite Data Packing
  *

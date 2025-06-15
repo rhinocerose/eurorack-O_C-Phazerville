@@ -600,7 +600,7 @@ public:
                 //continue;
             }
 
-            f.MIDIState.ProcessMIDIMsg(device.getChannel(), message, data1, data2);
+            f.MIDIState.ProcessMIDIMsg({device.getChannel(), message, data1, data2});
 #if defined(__IMXRT1062__)
             next_device.send(message, data1, data2, device.getChannel(), 0);
   #if defined(ARDUINO_TEENSY41)

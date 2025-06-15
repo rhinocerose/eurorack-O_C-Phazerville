@@ -297,7 +297,7 @@ public:
                 continue;
             }
 
-            f.MIDIState.ProcessMIDIMsg(usbMIDI.getChannel(), message, data1, data2);
+            f.MIDIState.ProcessMIDIMsg({usbMIDI.getChannel(), message, data1, data2});
 
             if (message == usbMIDI.NoteOn || message == usbMIDI.NoteOff) {
               dothething = true;
@@ -316,7 +316,7 @@ public:
                 continue;
             }
 
-            f.MIDIState.ProcessMIDIMsg(usbHostMIDI.getChannel(), message, data1, data2);
+            f.MIDIState.ProcessMIDIMsg({usbHostMIDI.getChannel(), message, data1, data2});
 
             if (message == usbMIDI.NoteOn || message == usbMIDI.NoteOff) {
               dothething = true;
@@ -332,7 +332,7 @@ public:
                 continue;
             }
 
-            f.MIDIState.ProcessMIDIMsg(MIDI1.getChannel(), message, data1, data2);
+            f.MIDIState.ProcessMIDIMsg({MIDI1.getChannel(), message, data1, data2});
 
             if (message == usbMIDI.NoteOn || message == usbMIDI.NoteOff) {
               dothething = true;
