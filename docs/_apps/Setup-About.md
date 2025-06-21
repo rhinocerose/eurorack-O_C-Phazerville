@@ -57,17 +57,19 @@ For each output:
 * Rotate the RIGHT encoder to calibrate - make the multimeter agree with the value shown
 * Long-press DOWN (or B) button where prompted to calculate intermediate values for that channel - **a checkmark will appear**
 
+After completing initial calibration, you can re-enter later and select "Start Fresh? No" to edit every individual DAC point for fine-tuning.
+
 ![ADC Offset](images/cal_adc1.png)
 
-ADC offset for 0v - _All values should be around zero (-1 < > +1)_
+ADC bias offset at 0v - with nothing patched to the CV inputs, verify that all values are around zero (-1 < > +1), making adjustments with the RIGHT encoder.
 
 ![ADC Scaling 1v](images/cal_adc2.png)
 ![ADC Scaling 3v](images/cal_adc3.png)
 
 Scaling for the CV inputs:
-* connect DAC A to CV1
-* on OCP hardware, make sure the attenuator is fully open (CW)
-* long-press DOWN (or B) button to set each point (1v and 3v)
+* Connect DAC A to CV1
+    - on OCP hardware, make sure the attenuator is fully open (CW)
+* Long-press DOWN (or B) button to set each point (1v and 3v)
 
 ![Screen Blank](images/cal_screenblank.png)
 
