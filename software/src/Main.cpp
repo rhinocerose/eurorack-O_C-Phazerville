@@ -152,10 +152,6 @@ void setup() {
     delay(400);
 #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   }
-
-  if (OLED_Uses_SPI1) {
-    SPI1.begin();
-  }
 #endif
 
   OC::calibration_load();

@@ -100,7 +100,6 @@ void DAC::Init(CalibrationData *calibration_data, bool flip180) {
 
 #elif defined(__IMXRT1062__)
   #if defined(ARDUINO_TEENSY40)
-  SPI.begin();
   IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 3; // DAC CS pin controlled by SPI
   #elif defined(ARDUINO_TEENSY41)
   if (DAC8568_Uses_SPI) {
@@ -108,7 +107,6 @@ void DAC::Init(CalibrationData *calibration_data, bool flip180) {
     // so we don't need to do any more hardware init, and calling SPI.begin()
     // again could cause problems.
   } else {
-    SPI.begin();
     IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 3; // DAC CS pin controlled by SPI
   }
   if (ADC33131D_Uses_FlexIO) {
@@ -412,13 +410,15 @@ void SPI_init() {
 
 #elif defined(__IMXRT1062__)
 void SPI_init() {
-  // TODO Teensy 4.1
+  SPI.begin();
+  if (OLED_Uses_SPI1) {
+    SPI1.begin();
+  }
 }
 
 #if defined(ARDUINO_TEENSY41)
 void OC::DAC::DAC8568_Vref_enable() {
   Serial.println("DAC8568 Vref enable");
-  SPI.begin();
   IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 3; // DAC CS pin controlled by SPI
   SPI.beginTransaction(SPISettings(24000000, MSBFIRST, SPI_MODE1));
   LPSPI4_TCR = (LPSPI4_TCR & 0xF8000000) | LPSPI_TCR_FRAMESZ(31)
