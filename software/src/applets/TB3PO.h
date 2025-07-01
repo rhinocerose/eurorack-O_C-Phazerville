@@ -262,7 +262,7 @@ class TB_3PO: public HemisphereApplet {
     Pack(data, PackLocation { 12, 4 }, density_encoder);
     Pack(data, PackLocation { 16, 16 }, seed);
     // old octave setting was here:
-    //Pack(data, PackLocation { 32, 8 }, HS::q_octave[io_offset]);
+    //Pack(data, PackLocation { 32, 8 }, q.octave);
     Pack(data, PackLocation { 40, 5 }, num_steps - 1);
 
     Pack(data, PackLocation { 48, 4 }, qselect);
@@ -677,7 +677,7 @@ private:
       // Show scale and root note like old times
       gfxPrint(38, 26, OC::scale_names_short[HS::GetScale(qselect)]);
 
-      int8_t &q_oct = HS::q_octave[io_offset];
+      int8_t &q_oct = HS::q_engine[qselect].octave;
       gfxPrint((q_oct == 0 ? 44 : 38), 36, OC::Strings::note_names_unpadded[HS::GetRootNote(qselect)]);
       if (q_oct != 0) {
         gfxPrint(50, 36, q_oct);
