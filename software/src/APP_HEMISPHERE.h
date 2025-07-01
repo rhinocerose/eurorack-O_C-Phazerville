@@ -265,6 +265,9 @@ public:
         zoom_slot = -1;
         clock_setup = 0;
 
+        // Defaults for Q-engine settings.
+        // These are overwritten later by Calibr8or::Start(),
+        // thus completing the hack of persistent quantizer settings on T32
         for (int i = 0; i < QUANT_CHANNEL_COUNT; ++i) {
             quant_scale[i] = (i<4)? OC::Scales::SCALE_SEMI : i-4;
             q_mask[i] = 0xffff;

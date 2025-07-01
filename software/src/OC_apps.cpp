@@ -86,6 +86,10 @@ namespace menu = OC::menu;
   prefix ## _isr \
 }
 
+// The order here is not inconsequential.
+// Each app's Start() method is called in sequence.
+// For example, the default quantizer settings from Hemisphere
+// are overwritten when Calibr8or loads its settings
 static constexpr OC::App available_apps[] = {
   DECLARE_APP('S','E', "Setup / About", Settings),
 
