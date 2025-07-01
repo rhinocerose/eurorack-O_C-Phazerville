@@ -60,10 +60,11 @@ public:
     void Start() {
         audio_app.Init();
 
-        for (int i = 0; i < 4; ++i) {
-            quant_scale[i] = OC::Scales::SCALE_SEMI;
+        for (int i = 0; i < QUANT_CHANNEL_COUNT; ++i) {
+            quant_scale[i] = (i<4)? OC::Scales::SCALE_SEMI : i-4;
+            q_mask[i] = 0xffff;
             quantizer[i].Init();
-            quantizer[i].Configure(OC::Scales::GetScale(quant_scale[i]), 0xffff);
+            quantizer[i].Configure(OC::Scales::GetScale(quant_scale[i]), q_mask[i]);
         }
 
         SetApplet(HEM_SIDE(0), HS::get_applet_index_by_id(18)); // DualTM

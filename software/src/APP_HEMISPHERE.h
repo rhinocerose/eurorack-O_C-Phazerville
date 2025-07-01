@@ -265,10 +265,11 @@ public:
         zoom_slot = -1;
         clock_setup = 0;
 
-        for (int i = 0; i < 4; ++i) {
-            quant_scale[i] = OC::Scales::SCALE_SEMI;
+        for (int i = 0; i < QUANT_CHANNEL_COUNT; ++i) {
+            quant_scale[i] = (i<4)? OC::Scales::SCALE_SEMI : i-4;
+            q_mask[i] = 0xffff;
             quantizer[i].Init();
-            quantizer[i].Configure(OC::Scales::GetScale(quant_scale[i]), 0xffff);
+            quantizer[i].Configure(OC::Scales::GetScale(quant_scale[i]), q_mask[i]);
         }
 
         showhide_cursor.Init(0, HEMISPHERE_AVAILABLE_APPLETS - 1);
