@@ -29,7 +29,11 @@ namespace HS {
   int next_ch = -1;
   int8_t next_octave, next_root_note;
 
-  int octave_max = 5;
+#ifdef NORTHERNLIGHT
+  int octave_max = 10;
+#else
+  int octave_max = 6;
+#endif
 
   bool cursor_wrap = 0;
   bool auto_save_enabled = false;
@@ -114,11 +118,11 @@ namespace HS {
     }
     next_root_note += dir;
 
-    if (next_root_note > 11 && next_octave < 5) {
+    if (next_root_note > 11 && next_octave < octave_max) {
       ++next_octave;
       next_root_note -= 12;
     }
-    if (next_root_note < 0 && next_octave > -5) {
+    if (next_root_note < 0 && next_octave > -octave_max) {
       --next_octave;
       next_root_note += 12;
     }
@@ -133,7 +137,7 @@ namespace HS {
       next_octave = q_octave[ch];
     }
     next_octave += dir;
-    CONSTRAIN(next_octave, -5, 5);
+    CONSTRAIN(next_octave, -octave_max, octave_max);
 
     QueueBeatSync();
   }

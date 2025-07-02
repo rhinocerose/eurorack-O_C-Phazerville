@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <algorithm>
+#include "HSUtils.h"
 #include "OC_digital_inputs.h"
 #include "OC_gpio.h"
 #include "OC_ADC.h"
@@ -171,7 +172,9 @@ void OC::Pinout_Detect() {
   }
 
   NorthernLightModular = NorthernLightModular || (id_voltage >= 0.45f);
-  if (NorthernLightModular)
+  if (NorthernLightModular) {
     DAC::kOctaveZero = 0;
+    HS::octave_max = 10;
+  }
 
 }

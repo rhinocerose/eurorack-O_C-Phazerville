@@ -167,7 +167,7 @@ public:
             channel[ch].transpose = values_[ix++] - CAL8_MAX_TRANSPOSE;
             const int overflow = channel[ch].transpose / ssize_;
             if (overflow != 0) {
-              HS::q_octave[ch] = constrain(overflow, -5, 5);
+              HS::q_octave[ch] = constrain(overflow, -octave_max, octave_max);
               channel[ch].transpose %= ssize_;
             }
 
@@ -552,7 +552,7 @@ public:
 
         if (!edit_mode) { // Octave jump
           HS::q_octave[sel_chan] += direction;
-          CONSTRAIN(HS::q_octave[sel_chan], -5, 5);
+          CONSTRAIN(HS::q_octave[sel_chan], -octave_max, octave_max);
         }
         else if ( OC::DAC::calibration_data_used( DAC_CHANNEL(sel_chan) ) != 0x01 ) // not autotuned
         {
@@ -594,7 +594,7 @@ public:
       const int overflow = val / ssize_;
       if (overflow != 0) {
         HS::q_octave[chan] += overflow;
-        CONSTRAIN(HS::q_octave[chan], -5, 5);
+        CONSTRAIN(HS::q_octave[chan], -octave_max, octave_max);
         val %= ssize_;
       }
       channel[chan].transpose = val;
