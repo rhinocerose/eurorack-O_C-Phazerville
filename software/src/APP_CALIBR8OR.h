@@ -46,7 +46,8 @@ static constexpr int CAL8_MAX_TRANSPOSE = 60;
 static constexpr int CAL8OR_PRECISION = 10000;
 
 static const int SCALE_SIZE(const int scale) {
-  return OC::Scales::GetScale(scale).num_notes;
+  const int s = OC::Scales::GetScale(scale).num_notes;
+  return (s == 0) ? 12 : s; // OFF behaves like SEMI
 }
 // channel configs
 struct Cal8ChannelConfig {
@@ -375,16 +376,19 @@ public:
             // respect S&H mode
             if (cfg.clocked_mode != SAMPLE_AND_HOLD || clocked) {
                 // CV value
-                int pitch = In(ch);
-                int quantized = HS::Quantize(ch, pitch, 0, cfg.transpose_active);
-                cfg.last_note = quantized;
+                if (HS::GetScale(ch) == OC::Scales::SCALE_NONE) {
+                  // transpose raw value in semitones
+                  cfg.last_note = In(ch) + (cfg.transpose_active << 7) + q_octave[ch] * (12 << 7);
+                } else {
+                  cfg.last_note = HS::Quantize(ch, In(ch), 0, cfg.transpose_active);
+                }
             }
 
+            // apply scaling and offset, and send out to DAC
             int output_cv = cfg.last_note;
             if ( OC::DAC::calibration_data_used( DAC_CHANNEL(sel_chan) ) != 0x01 ) // not autotuned
                 output_cv = output_cv * (CAL8OR_PRECISION + cfg.scale_factor) / CAL8OR_PRECISION;
             output_cv += cfg.offset;
-
             Out(ch, output_cv);
 
             // for UI flashers
@@ -667,7 +671,7 @@ public:
         gfxIcon(9, y, BEND_ICON);
 
         // -- LCD Display Section --
-        const int s = SCALE_SIZE(HS::GetScale(sel_chan));
+        int s = SCALE_SIZE(HS::GetScale(sel_chan));
         int degrees = channel[sel_chan].transpose + HS::q_octave[sel_chan] * s;
         const bool positive = degrees >= 0;
         const int octave = degrees / s;
