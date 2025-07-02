@@ -92,9 +92,9 @@ public:
     /* Update an existing segment */
     void SetSegment(uint8_t ix, HS::VOSegment segment) {
         ix = constrain(ix, 0, segment_count - 1);
-        change_total_time(segments[ix].time);
+        change_total_time(-segments[ix].time); // subtract
         memcpy(&segments[ix], &segment, sizeof(segments[ix]));
-        change_total_time(segments[ix].time);
+        change_total_time(segments[ix].time); // add
         if (ix == segment_count) segment_count++;
     }
 
