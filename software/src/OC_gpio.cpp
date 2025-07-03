@@ -16,9 +16,7 @@ uint8_t OC_GPIO_DEBUG_PIN1=24, OC_GPIO_DEBUG_PIN2=25;
 bool ADC33131D_Uses_FlexIO=false;
 bool OLED_Uses_SPI1=false;
 bool DAC8568_Uses_SPI=false;
-#ifdef NORTHERNLIGHT
-bool NorthernLightModular=true;
-#else
+#ifndef NORTHERNLIGHT
 bool NorthernLightModular=false;
 #endif
 bool I2S2_Audio_ADC=false;
@@ -171,7 +169,9 @@ void OC::Pinout_Detect() {
     MIDI_Uses_Serial8 = true;     // pins 34=IN, 35=OUT
   }
 
+#ifndef NORTHERNLIGHT
   NorthernLightModular = NorthernLightModular || (id_voltage >= 0.45f);
+#endif
   if (NorthernLightModular) {
     DAC::kOctaveZero = 0;
     HS::octave_max = 10;

@@ -2,6 +2,7 @@
 
 #include "OC_core.h"
 #include "OC_ADC.h"
+#include "OC_gpio.h"
 #include "OC_scales.h"
 #include "PackingUtils.h"
 
@@ -19,21 +20,16 @@ using simfloat = int32_t;
 #ifdef NORTHERNLIGHT
 #define PULSE_VOLTAGE 9
 #define HEMISPHERE_MAX_CV 15360
-#define HEMISPHERE_CENTER_CV 7680 // 5V
+#define HEMISPHERE_CENTER_CV 7680 // 5 octaves (6V)
 #define HEMISPHERE_MIN_CV 0
-#elif defined(VOR)
-#define PULSE_VOLTAGE 8
-#define HEMISPHERE_MAX_CV (HS::octave_max * 12 << 7)
-#define HEMISPHERE_CENTER_CV 0
-#define HEMISPHERE_MIN_CV (HEMISPHERE_MAX_CV - 15360)
 #else
-#define PULSE_VOLTAGE 6
-#define HEMISPHERE_MAX_CV 9216 // 6V
-#define HEMISPHERE_CENTER_CV 0
-#define HEMISPHERE_MIN_CV -4608 // -3V
+#define PULSE_VOLTAGE HS::octave_max
+#define HEMISPHERE_MAX_CV (HS::octave_max * 12 << 7)
+#define HEMISPHERE_CENTER_CV ((OC::DAC::kOctaveZero==0)*HEMISPHERE_MAX_CV/2)
+#define HEMISPHERE_MIN_CV (-OC::DAC::kOctaveZero * (12 << 7))
 #endif
 #define HEMISPHERE_3V_CV 4608
-#define HEMISPHERE_MAX_INPUT_CV 9216 // 6V
+#define HEMISPHERE_MAX_INPUT_CV (9216 + NorthernLightModular*(4*12<<7)) // 6V or 10V
 #define HEMISPHERE_CENTER_DETENT 80
 #define HEMISPHERE_CLOCK_TICKS 17 // one millisecond
 #define HEMISPHERE_CURSOR_TICKS 5000
@@ -119,8 +115,7 @@ constexpr int Proportion(const int numerator, const int denominator, const int m
  *              ----------------- = ----------
  *              HEMISPHERE_MAX_CV   max_pixels
  */
-constexpr int ProportionCV(const int cv_value, const int max_pixels) {
-    // TODO: variable scaling for VOR?
+static const int ProportionCV(const int cv_value, const int max_pixels) {
     int prop = constrain(Proportion(cv_value, HEMISPHERE_MAX_INPUT_CV, max_pixels), -max_pixels, max_pixels);
     return prop;
 }
