@@ -316,6 +316,8 @@ public:
               break;
           UnpackPackables(data, frame.MIDIState.mapping[midx]);
         }
+        frame.MIDIState.UpdateMidiChannelFilter();
+        frame.MIDIState.UpdateMaxPolyphony();
 
         // User Patterns aka Sequences
         for (size_t i = 0; i < OC::Patterns::PATTERN_USER_COUNT; ++i) {

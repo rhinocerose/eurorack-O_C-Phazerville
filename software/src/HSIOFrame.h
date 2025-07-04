@@ -197,8 +197,8 @@ struct MIDIFrame {
     void UpdateMidiChannelFilter() {
         uint16_t filter = 0;
         bool omni = false;
-        for (int ch = 0; ch < MIDIMAP_MAX; ++ch) {
-            MIDIMapping &map = mapping[ch];
+        for (auto &map : mapping) {
+            if (!map.function) continue;
             if (map.channel < 16) filter |= (1 << map.channel);
             else omni = true;
         }
@@ -212,8 +212,9 @@ struct MIDIFrame {
 
     void UpdateMaxPolyphony() { // find max voice number to determine how much to buffer
         int voice = 0;
-        for (int ch = 0; ch < MIDIMAP_MAX; ++ch) {
-            if (mapping[ch].dac_polyvoice > voice) voice = mapping[ch].dac_polyvoice;
+        for (auto &map : mapping) {
+            if (!map.function) continue;
+            if (map.dac_polyvoice > voice) voice = map.dac_polyvoice;
         }
         if (max_voice != voice+1) {
             ClearPolyBuffer();

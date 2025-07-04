@@ -174,8 +174,6 @@ public:
     void OnDataReceive(uint64_t data) {
         map_index[0] = Unpack(data, PackLocation {0,5});
         map_index[1] = Unpack(data, PackLocation {8,5});
-        //frame.MIDIState.UpdateMidiChannelFilter();
-        //frame.MIDIState.UpdateMaxPolyphony();
     }
 
 protected:
