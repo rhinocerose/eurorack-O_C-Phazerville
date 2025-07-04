@@ -157,7 +157,7 @@ public:
             ? In(ch) : HEMISPHERE_CENTER_CV;
     }
     int SemitoneIn(int ch) {
-      return input_quant[ch].Process(In(ch));
+      return input_quant[ch + io_offset].Process(In(ch));
     }
 
     /* Has the specified Digital input been clocked this cycle? (rising edge of a gate)
