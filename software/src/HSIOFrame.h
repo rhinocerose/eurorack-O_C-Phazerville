@@ -32,6 +32,11 @@ static constexpr int CVMAP_MAX = ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP
 struct MIDIMessage {
   // values expected from MIDI library, so channel starts at 1 (one), not zero
   uint8_t channel, message, data1, data2;
+
+  const uint8_t chan() { return channel - 1; }
+  const uint8_t note() { return data1; }
+  const uint8_t vel() { return data2; }
+  const bool IsNote() { return message == HEM_MIDI_NOTE_ON; }
 };
 
 using MIDILogEntry = MIDIMessage;
