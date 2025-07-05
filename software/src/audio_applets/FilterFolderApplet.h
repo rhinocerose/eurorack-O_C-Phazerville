@@ -42,8 +42,8 @@ public:
         filtfolder[i].filter.resonance(0.01f * (res + res_cv.InRescaled(500)));
       }
       filtfolder[i].AmpAndFold(
-        0.01f * fold * fold_cv.InF(1.0f),
-        dbToScalar(amplevel - abs(bias)) * amp_cv.InF(1.0f),
+        0.01f * fold + fold_cv.InF(0.0f),
+        dbToScalar(amplevel - abs(bias)) + amp_cv.InF(0.0f),
         bias
       );
     }
@@ -219,8 +219,8 @@ private:
       drive.amplitude(foldF);
       for (int i = 0; i < 4; ++i) {
         float chanlvl = (i == modesel || (modesel > 3 && (i==1 || i==3))) * level;
-        if (i==1) chanlvl *= dbToScalar(tilt);
-        if (i==3) chanlvl *= -dbToScalar(-tilt);
+        if (i==1) chanlvl *= dbToScalar(tilt) / 2;
+        if (i==3) chanlvl *= -dbToScalar(-tilt) / 2;
         mixer.gain(i, chanlvl);
       }
     }
