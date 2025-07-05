@@ -36,7 +36,7 @@ public:
     ONE_POLE(lp, in, 0.001f);
 
     if (ac_couple) in -= lp;
-    interp_stream.Push(Clip16(gain_cv.InF(1.0f) * dbToScalar(gain) * scalar * in));
+    interp_stream.Push(Clip16((gain_cv.InF(0.0f) + dbToScalar(gain)) * scalar * in));
   }
 
   void View() override {
