@@ -31,10 +31,14 @@ public:
         hMIDIIn_A_MIDI_CHANNEL,
         hMIDIIn_A_OUTPUT_MODE,
         hMIDIIn_A_POLY_VOICE,
+        MAP_A_RANGELOW, MAP_A_RANGEHIGH,
+
         MAP_INDEX_B,
         hMIDIIn_B_MIDI_CHANNEL,
         hMIDIIn_B_OUTPUT_MODE,
         hMIDIIn_B_POLY_VOICE,
+        MAP_B_RANGELOW, MAP_B_RANGEHIGH,
+
         hMIDIIn_GLOBAL_POLY_MODE,
         hMIDIIn_GLOBAL_PROG_CHANGE_CHANNEL,
         hMIDIIn_LOG_VIEW,
@@ -106,6 +110,10 @@ public:
             case hMIDIIn_B_MIDI_CHANNEL:
             case hMIDIIn_B_OUTPUT_MODE:
             case hMIDIIn_B_POLY_VOICE:
+            case MAP_A_RANGELOW:
+            case MAP_A_RANGEHIGH:
+            case MAP_B_RANGELOW:
+            case MAP_B_RANGEHIGH:
                 DrawChannelPage();
                 DrawMonitor();
                 break;
@@ -119,12 +127,29 @@ public:
         }
     }
 
+    void AuxButton() override {
+      switch (cursor) {
+        case hMIDIIn_A_OUTPUT_MODE:
+        case hMIDIIn_B_OUTPUT_MODE:
+          {
+            int ch = map_index[io_page];
+            MIDIMapping &map = frame.MIDIState.mapping[ch];
+            map.channel = 16; // omni
+            map.function = HEM_MIDI_LEARN;
+            map.function_cc = -1; // auto-learn MIDI CC or precise NoteOn
+            frame.MIDIState.clock_count = 0;
+            break;
+          }
+        default: break;
+      }
+      CancelEdit();
+    }
     // void OnButtonPress() { }
 
     void OnEncoderMove(int direction) {
         if (!EditMode()) {
             MoveCursor(cursor, direction, hMIDIIn_CURSOR_LAST);
-            io_page = (cursor > hMIDIIn_A_POLY_VOICE);
+            io_page = (cursor >= MAP_INDEX_B);
             return;
         }
         int ch = map_index[io_page];
@@ -143,7 +168,8 @@ public:
             case hMIDIIn_A_OUTPUT_MODE:
             case hMIDIIn_B_OUTPUT_MODE:
                 map.function = constrain(map.function + direction, 0, HEM_MIDI_MAX_FUNCTION);
-                map.function_cc = -1; // auto-learn MIDI CC
+                if (map.function == HEM_MIDI_CC_OUT)
+                  map.function_cc = -1; // auto-learn MIDI CC
                 frame.MIDIState.clock_count = 0;
                 break;
             case hMIDIIn_A_POLY_VOICE:
@@ -151,6 +177,15 @@ public:
                 map.dac_polyvoice = constrain(map.dac_polyvoice + direction, 0, DAC_CHANNEL_LAST - 1);
                 frame.MIDIState.UpdateMaxPolyphony();
                 break;
+            case MAP_A_RANGELOW:
+            case MAP_B_RANGELOW:
+                map.AdjustRangeLow(direction);
+                break;
+            case MAP_A_RANGEHIGH:
+            case MAP_B_RANGEHIGH:
+                map.AdjustRangeHigh(direction);
+                break;
+
             case hMIDIIn_GLOBAL_POLY_MODE:
                 frame.MIDIState.poly_mode = constrain(frame.MIDIState.poly_mode + direction, 0, POLY_LAST);
                 break;
@@ -226,12 +261,17 @@ private:
         else graphics.printf("%3d", m_ch + 1);
 
         gfxIcon(2, 34, MIDI_ICON);
-        if (map.function <= HEM_MIDI_MAX_FUNCTION)
+        if (map.function < HEM_MIDI_FN_COUNT)
           gfxPrint(13, 35, midi_fn_name[map.function]);
         if (map.function == HEM_MIDI_CC_OUT)
             gfxPrint(map.function_cc);
 
-        gfxPrint(1, 45, "Voice:"); gfxPrint(55, 45, map.dac_polyvoice + 1);
+        if (cursor >= (MAP_A_RANGELOW + io_page*(MAP_A_RANGEHIGH+1))) {
+          gfxPrint(1, 45, "<"); gfxPrint(HS::midi_note_numbers[map.range_low]);
+          gfxPrint(34, 45, HS::midi_note_numbers[map.range_high]); gfxPrint(">");
+        } else {
+          gfxPrint(1, 45, "Voice:"); gfxPrint(55, 45, map.dac_polyvoice + 1);
+        }
 
         // Cursor
         switch (cursor) {
@@ -250,6 +290,14 @@ private:
             case hMIDIIn_A_POLY_VOICE:
             case hMIDIIn_B_POLY_VOICE:
                 gfxCursor(42, 53, 21);
+                break;
+            case MAP_A_RANGELOW:
+            case MAP_B_RANGELOW:
+                gfxCursor(7, 53, 19);
+                break;
+            case MAP_A_RANGEHIGH:
+            case MAP_B_RANGEHIGH:
+                gfxCursor(34, 53, 19);
                 break;
             default: break;
         }

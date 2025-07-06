@@ -111,9 +111,12 @@ enum MIDIFunctions : uint8_t {
     HEM_MIDI_CLOCK_16_OUT,
     HEM_MIDI_CLOCK_24_OUT, // full 24ppqn
 
-    HEM_MIDI_MAX_FUNCTION = HEM_MIDI_CLOCK_24_OUT
+    HEM_MIDI_LEARN,
+
+    HEM_MIDI_FN_COUNT,
+    HEM_MIDI_MAX_FUNCTION = HEM_MIDI_CLOCK_24_OUT,
 };
-const char* const midi_fn_name[HEM_MIDI_MAX_FUNCTION + 1] = {
+const char* const midi_fn_name[HEM_MIDI_FN_COUNT] = {
     "None",
     "Note", "PolyN", "LoNote", "HiNote", "PdlNote", "InvNote",
     "Trig", "Trig1st", "TrgAlws",
@@ -124,6 +127,7 @@ const char* const midi_fn_name[HEM_MIDI_MAX_FUNCTION + 1] = {
     "Bend",
     "Run", "Start",
     "Clk-4", "Clk-8", "Clk16", "Clk24",
+    "(learn)",
 };
 
 enum MIDIPolyMode : uint8_t {

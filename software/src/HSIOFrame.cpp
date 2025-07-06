@@ -80,6 +80,14 @@ void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
 
         switch (msg.message) {
             case usbMIDI.NoteOn: {
+                if (map.function == HEM_MIDI_LEARN) {
+                  //TODO: set range based on polyphony, or alternate learn modes
+                  //if (map.function_cc < 0)
+                    //map.range_low = map.range_high = msg.data1;
+                  map.function = HEM_MIDI_NOTE_OUT;
+                  map.function_cc = 0;
+                  map.channel = msg.channel - 1;
+                }
                 if (!map.InRange(msg.data1)) break;
                 map.semitone_mask = map.semitone_mask | (1u << (msg.data1 % 12));
 
@@ -202,17 +210,24 @@ void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
                                 case HEM_MIDI_GATE_POLY_OUT:
                                     map.output = 0;
                                     break;
-                            }
-                            if (map.function == HEM_MIDI_GATE_INV_OUT) {
-                                map.output = PULSE_VOLTAGE * (12 << 7);
+                                case HEM_MIDI_GATE_INV_OUT:
+                                    map.output = PULSE_VOLTAGE * (12 << 7);
+                                    break;
                             }
                         }
                     }
                 }
 
-                if (map.function == HEM_MIDI_CC_OUT) {
-                    if (map.function_cc < 0) map.function_cc = msg.data1;
+                if (map.function == HEM_MIDI_LEARN) {
+                  map.function = HEM_MIDI_CC_OUT;
+                  map.function_cc = msg.data1;
+                  map.channel = msg.channel - 1;
+                }
 
+                if (map.function == HEM_MIDI_CC_OUT) {
+                    if (map.function_cc < 0) { // auto-learn CC#
+                      map.function_cc = msg.data1;
+                    }
                     if (map.function_cc == msg.data1) {
                         map.output = Proportion(msg.data2, 127, HEMISPHERE_MAX_CV);
                         if (!log_skip) log_this = 1;
@@ -236,6 +251,10 @@ void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
                 break;
             }
             case usbMIDI.PitchBend: {
+                if (map.function == HEM_MIDI_LEARN) {
+                  map.function = HEM_MIDI_PB_OUT;
+                  map.channel = msg.channel - 1;
+                }
                 if (map.function == HEM_MIDI_PB_OUT) {
                     int data = (msg.data2 << 7) + msg.data1 - 8192;
                     map.output = Proportion(data, 8192, HEMISPHERE_3V_CV);
