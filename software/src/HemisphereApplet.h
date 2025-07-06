@@ -586,8 +586,8 @@ protected:
      *     // etc...
      * }
      */
-    void StartADCLag(size_t ch = 0) {
-        frame.adc_lag_countdown[io_offset + ch] = HEMISPHERE_ADC_LAG;
+    void StartADCLag(size_t ch = 0, int lag_ticks = HEMISPHERE_ADC_LAG) {
+        frame.adc_lag_countdown[io_offset + ch] = lag_ticks;
     }
 
     bool EndOfADCLag(size_t ch = 0) {
