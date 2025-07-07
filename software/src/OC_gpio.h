@@ -24,6 +24,8 @@ extern bool MIDI_Uses_Serial8;
 extern bool SDcard_Ready;
 #ifdef NORTHERNLIGHT
 static constexpr bool NorthernLightModular = true;
+#elif !defined(ARDUINO_TEENSY41)
+static constexpr bool NorthernLightModular = false;
 #else
 extern bool NorthernLightModular;
 #endif
