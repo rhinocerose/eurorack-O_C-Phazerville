@@ -43,7 +43,8 @@ public:
     djfilter_mod = constrain(djfilter + djfilter_cv.InRescaled(128), -64, 64);
     SetFilter(filter_on * djfilter_mod);
 
-    float gain = dbToScalar(level) * level_cv.InF(1.0f);
+    float gain = dbToScalar(level) + level_cv.InF(0.0f);
+    if (gain < 0.0f) gain = 0.0f;
 
     const int i = 0;
     FileLevel(gain);
