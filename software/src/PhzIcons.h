@@ -1,5 +1,5 @@
-// Icons! Made with http://beigemaze.com/bitmap8x8.html
-// Retouched with https://goatama.ridiculousglitch.com/bitca/ (Column major MSB Bottom)
+// Icons!
+// web editor: https://goatama.ridiculousglitch.com/bitca/ (Column major MSB Bottom)
 
 #ifndef PHAZER_ICON_SET
 #define PHAZER_ICON_SET

@@ -1,5 +1,5 @@
-// Icons! Made with http://beigemaze.com/bitmap8x8.html
-// Retouched with https://bitca--goatama.repl.co/ (Column major MSB Bottom)
+// Icons!
+// Web editor: https://goatama.ridiculousglitch.com/bitca/ (Column major MSB Bottom)
 
 #ifndef HS_ICON_SET
 #define HS_ICON_SET
