@@ -38,28 +38,150 @@
 class ADSREG : public HemisphereApplet {
 public:
 
-  static constexpr int SUSTAIN_CONST = 35;
-  static constexpr int DISPLAY_HEIGHT = 30;
+    static constexpr int SUSTAIN_CONST = 35;
+    static constexpr int DISPLAY_HEIGHT = 30;
 
-  // About four seconds
-  static constexpr int MAX_TICKS_AD = 33333;
+    // About four seconds
+    static constexpr int MAX_TICKS_AD = 33333;
 
-  // About eight seconds
-  static constexpr int MAX_TICKS_R = 133333;
+    // About eight seconds
+    static constexpr int MAX_TICKS_R = 133333;
 
-  static constexpr int STAGE_MAX_VALUE = 255;
-  static constexpr int NUM_CHANNELS = 2;
-  enum ADSRStage {
-    ATTACK_STAGE = 0,
-    DECAY_STAGE = 1,
-    SUSTAIN_STAGE = 2,
-    RELEASE_STAGE = 3,
+    static constexpr int STAGE_MAX_VALUE = 255;
+    static constexpr int NUM_CHANNELS = 2;
+    enum ADSRStage {
+      ATTACK_STAGE = 0,
+      DECAY_STAGE = 1,
+      SUSTAIN_STAGE = 2,
+      RELEASE_STAGE = 3,
 
-    NUM_STAGES,
+      NUM_STAGES,
 
-    NO_STAGE = -1,
-  };
-  static constexpr int CURSOR_MAX = NUM_STAGES * NUM_CHANNELS - 1;
+      NO_STAGE = -1,
+    };
+    static constexpr int CURSOR_MAX = NUM_STAGES * NUM_CHANNELS - 1;
+
+    // ++ This is where the magic happens ++
+    struct MiniADSR {
+      // Attack rate from 1-255 where 1 is fast
+      // Decay rate from 1-255 where 1 is fast
+      // Sustain level from 1-255 where 1 is low
+      // Release rate from 1-255 where 1 is fast
+      uint8_t setting[NUM_STAGES];
+      uint8_t shape[NUM_STAGES]; // 0 = exp, 128 = linear, 255 = log
+
+      // Stage management
+      ADSRStage stage; // The current ASDR stage of the current envelope
+      int stage_ticks; // Current number of ticks into the current stage
+      bool gated; // Gate was on in last tick
+      simfloat amplitude; // Amplitude of the envelope at the current position
+
+      int cv_mod; // CV modulated values
+
+      void Init(int ch = 0) {
+        stage_ticks = 0;
+        gated = 0;
+        stage = NO_STAGE;
+
+        setting[ATTACK_STAGE] = 10 + ch * 10;
+        setting[DECAY_STAGE] = 30;
+        setting[SUSTAIN_STAGE] = 120;
+        setting[RELEASE_STAGE] = 25 + ch * 10;
+        cv_mod = 0;
+      }
+
+      // TODO: shaping math (exp -> lin -> log)
+      void AttackAmplitude() {
+          int effective_attack = constrain(setting[ATTACK_STAGE], 1, STAGE_MAX_VALUE);
+          int total_stage_ticks = Proportion(effective_attack, STAGE_MAX_VALUE, MAX_TICKS_AD);
+          int ticks_remaining = total_stage_ticks - stage_ticks;
+          if (effective_attack == 1) ticks_remaining = 0;
+          if (ticks_remaining <= 0) { // End of attack; move to decay
+              stage = DECAY_STAGE;
+              stage_ticks = 0;
+              amplitude = int2simfloat(HEMISPHERE_MAX_CV);
+          } else {
+              simfloat amplitude_remaining = int2simfloat(HEMISPHERE_MAX_CV) - amplitude;
+              simfloat increase = amplitude_remaining / ticks_remaining;
+              amplitude += increase;
+          }
+      }
+
+      void DecayAmplitude() {
+          int total_stage_ticks = Proportion(setting[DECAY_STAGE], STAGE_MAX_VALUE, MAX_TICKS_AD);
+          int ticks_remaining = total_stage_ticks - stage_ticks;
+          simfloat amplitude_remaining = amplitude
+            - int2simfloat(Proportion(setting[SUSTAIN_STAGE], STAGE_MAX_VALUE, HEMISPHERE_MAX_CV));
+          if (setting[SUSTAIN_STAGE] == 255) ticks_remaining = 0; // skip decay if sustain is maxed
+          if (ticks_remaining <= 0) { // End of decay; move to sustain
+              stage = SUSTAIN_STAGE;
+              stage_ticks = 0;
+              amplitude = int2simfloat(Proportion(setting[SUSTAIN_STAGE], STAGE_MAX_VALUE, HEMISPHERE_MAX_CV));
+          } else {
+              simfloat decrease = amplitude_remaining / ticks_remaining;
+              amplitude -= decrease;
+          }
+      }
+
+      void SustainAmplitude() {
+          amplitude = int2simfloat(Proportion(setting[SUSTAIN_STAGE] - 1, STAGE_MAX_VALUE, HEMISPHERE_MAX_CV));
+      }
+
+      void ReleaseAmplitude() {
+          int effective_release = constrain(setting[RELEASE_STAGE] + cv_mod, 1, STAGE_MAX_VALUE) - 1;
+          int total_stage_ticks = Proportion(effective_release, STAGE_MAX_VALUE, MAX_TICKS_R);
+          int ticks_remaining = total_stage_ticks - stage_ticks;
+          if (effective_release == 0) ticks_remaining = 0;
+          if (ticks_remaining <= 0 || amplitude <= 0) { // End of release; turn off envelope
+              stage = NO_STAGE;
+              stage_ticks = 0;
+              amplitude = 0;
+          } else {
+              simfloat decrease = amplitude / ticks_remaining;
+              amplitude -= decrease;
+          }
+      }
+
+      void Process(bool gatehigh = true) {
+          if (gatehigh) {
+              if (!gated) { // The gate wasn't on last time, so this is a newly-gated EG
+                  stage_ticks = 0;
+                  if (stage != RELEASE_STAGE) amplitude = 0;
+                  stage = ATTACK_STAGE;
+                  AttackAmplitude();
+              } else { // The gate is STILL on, so process the appopriate stage
+                  ++stage_ticks;
+                  if (stage == ATTACK_STAGE) AttackAmplitude();
+                  if (stage == DECAY_STAGE) DecayAmplitude();
+                  if (stage == SUSTAIN_STAGE) SustainAmplitude();
+              }
+              gated = 1;
+          } else {
+              if (gated) { // The gate was on last time, so this is a newly-released EG
+                  stage = RELEASE_STAGE;
+                  stage_ticks = 0;
+              }
+
+              if (stage == RELEASE_STAGE) { // Process the release stage, if necessary
+                  ++stage_ticks;
+                  ReleaseAmplitude();
+              }
+              gated = 0;
+          }
+      }
+
+      int GetLength() const {
+          return setting[ATTACK_STAGE]
+               + setting[DECAY_STAGE]
+               + setting[RELEASE_STAGE]
+               + SUSTAIN_CONST; // Sustain is constant because it's a level
+      }
+      int GetAmplitude() {
+          return simfloat2int(amplitude);
+      }
+    };
+
+    // --- Applet Code Below ---
 
     const char* applet_name() { // Maximum 10 characters
         return "ADSR EG";
@@ -80,36 +202,9 @@ public:
             auto &adsr = adsr_env[ch];
             adsr.cv_mod = get_modification_with_input(ch);
 
-            if (Gate(ch)) {
-                if (!adsr.gated) { // The gate wasn't on last time, so this is a newly-gated EG
-                    adsr.stage_ticks = 0;
-                    if (adsr.stage != RELEASE_STAGE) adsr.amplitude = 0;
-                    adsr.stage = ATTACK_STAGE;
-                    AttackAmplitude(ch);
-                } else { // The gate is STILL on, so process the appopriate stage
-                    ++adsr.stage_ticks;
-                    if (adsr.stage == ATTACK_STAGE) AttackAmplitude(ch);
-                    if (adsr.stage == DECAY_STAGE) DecayAmplitude(ch);
-                    if (adsr.stage == SUSTAIN_STAGE) SustainAmplitude(ch);
-                }
-                adsr.gated = 1;
-            } else {
-                if (adsr.gated) { // The gate was on last time, so this is a newly-released EG
-                    adsr.stage = RELEASE_STAGE;
-                    adsr.stage_ticks = 0;
-                }
-
-                if (adsr.stage == RELEASE_STAGE) { // Process the release stage, if necessary
-                    ++adsr.stage_ticks;
-                    ReleaseAmplitude(ch);
-                }
-                adsr.gated = 0;
-            }
-
-
-            Out(ch, GetAmplitudeOf(ch));
+            adsr.Process(Gate(ch));
+            Out(ch, adsr.GetAmplitude());
         }
-
     }
 
     void View() {
@@ -117,6 +212,9 @@ public:
         DrawADSR();
     }
 
+    void AuxButton() {
+        shape_edit ^= 1;
+    }
     //void OnButtonPress() { }
 
     void OnEncoderMove(int direction) {
@@ -128,7 +226,10 @@ public:
         const int curEG = (cursor / NUM_STAGES);
         const int stage = cursor % NUM_STAGES;
         auto &adsr = adsr_env[curEG];
-        adsr.setting[stage] = constrain(adsr.setting[stage] + direction, 1, STAGE_MAX_VALUE);
+        if (shape_edit)
+          adsr.shape[stage] = constrain(adsr.shape[stage] + direction, 0, 0xff);
+        else
+          adsr.setting[stage] = constrain(adsr.setting[stage] + direction, 1, STAGE_MAX_VALUE);
     }
 
     uint64_t OnDataRequest() {
@@ -171,46 +272,17 @@ protected:
 
 private:
     int cursor;
-    struct AdsrParams {
-      // Attack rate from 1-255 where 1 is fast
-      // Decay rate from 1-255 where 1 is fast
-      // Sustain level from 1-255 where 1 is low
-      // Release rate from 1-255 where 1 is fast
-      uint8_t setting[NUM_STAGES];
-
-      // Stage management
-      ADSRStage stage; // The current ASDR stage of the current envelope
-      int stage_ticks; // Current number of ticks into the current stage
-      bool gated; // Gate was on in last tick
-      simfloat amplitude; // Amplitude of the envelope at the current position
-
-      int cv_mod; // CV modulated values
-
-      void Init(int ch = 0) {
-        stage_ticks = 0;
-        gated = 0;
-        stage = NO_STAGE;
-
-        setting[ATTACK_STAGE] = 10 + ch * 10;
-        setting[DECAY_STAGE] = 30;
-        setting[SUSTAIN_STAGE] = 120;
-        setting[RELEASE_STAGE] = 25 + ch * 10;
-        cv_mod = 0;
-      }
-    } adsr_env[2];
+    MiniADSR adsr_env[2];
+    bool shape_edit = false;
 
     // TODO: implement destination mapping; currently hardcoded to Release stage
 
     const char* const labels[NUM_STAGES] = { "A=", "D=", "S=", "R=" };
 
-    int GetAmplitudeOf(int ch) {
-        return simfloat2int(adsr_env[ch].amplitude);
-    }
-
     void DrawIndicator() {
         ForEachChannel(ch)
         {
-            int w = Proportion(GetAmplitudeOf(ch), HEMISPHERE_MAX_CV, 62);
+            int w = Proportion(adsr_env[ch].GetAmplitude(), HEMISPHERE_MAX_CV, 62);
             //-ghostils:Update to make smaller to allow for additional information on the screen:
             //gfxRect(0, 15 + (ch * 10), w, 6);
             gfxRect(0, 15 + (ch * 3), w, 2);
@@ -248,10 +320,7 @@ private:
     void DrawADSR() {
         const int curEG = (cursor / NUM_STAGES);
         auto &adsr = adsr_env[curEG];
-        int length = adsr.setting[ATTACK_STAGE]
-                   + adsr.setting[DECAY_STAGE]
-                   + adsr.setting[RELEASE_STAGE]
-                   + SUSTAIN_CONST; // Sustain is constant because it's a level
+        int length = adsr.GetLength();
         int x = 0;
         x = DrawAttack(x, length);
         x = DrawDecay(x, length);
@@ -295,61 +364,6 @@ private:
         int yS = Proportion(adsr.setting[SUSTAIN_STAGE], STAGE_MAX_VALUE, DISPLAY_HEIGHT);
         gfxLine(x, BottomAlign(yS), xR, BottomAlign(0), (cursor%NUM_STAGES) != RELEASE_STAGE);
         return xR;
-    }
-
-    void AttackAmplitude(int ch) {
-        auto &adsr = adsr_env[ch];
-        int effective_attack = constrain(adsr.setting[ATTACK_STAGE], 1, STAGE_MAX_VALUE);
-        int total_stage_ticks = Proportion(effective_attack, STAGE_MAX_VALUE, MAX_TICKS_AD);
-        int ticks_remaining = total_stage_ticks - adsr.stage_ticks;
-        if (effective_attack == 1) ticks_remaining = 0;
-        if (ticks_remaining <= 0) { // End of attack; move to decay
-            adsr.stage = DECAY_STAGE;
-            adsr.stage_ticks = 0;
-            adsr.amplitude = int2simfloat(HEMISPHERE_MAX_CV);
-        } else {
-            simfloat amplitude_remaining = int2simfloat(HEMISPHERE_MAX_CV) - adsr.amplitude;
-            simfloat increase = amplitude_remaining / ticks_remaining;
-            adsr.amplitude += increase;
-        }
-    }
-
-    void DecayAmplitude(int ch) {
-        auto &adsr = adsr_env[ch];
-        int total_stage_ticks = Proportion(adsr.setting[DECAY_STAGE], STAGE_MAX_VALUE, MAX_TICKS_AD);
-        int ticks_remaining = total_stage_ticks - adsr.stage_ticks;
-        simfloat amplitude_remaining = adsr.amplitude
-          - int2simfloat(Proportion(adsr.setting[SUSTAIN_STAGE], STAGE_MAX_VALUE, HEMISPHERE_MAX_CV));
-        if (adsr.setting[SUSTAIN_STAGE] == 255) ticks_remaining = 0; // skip decay if sustain is maxed
-        if (ticks_remaining <= 0) { // End of decay; move to sustain
-            adsr.stage = SUSTAIN_STAGE;
-            adsr.stage_ticks = 0;
-            adsr.amplitude = int2simfloat(Proportion(adsr.setting[SUSTAIN_STAGE], STAGE_MAX_VALUE, HEMISPHERE_MAX_CV));
-        } else {
-            simfloat decrease = amplitude_remaining / ticks_remaining;
-            adsr.amplitude -= decrease;
-        }
-    }
-
-    void SustainAmplitude(int ch) {
-        auto &adsr = adsr_env[ch];
-        adsr.amplitude = int2simfloat(Proportion(adsr.setting[SUSTAIN_STAGE] - 1, STAGE_MAX_VALUE, HEMISPHERE_MAX_CV));
-    }
-
-    void ReleaseAmplitude(int ch) {
-        auto &adsr = adsr_env[ch];
-        int effective_release = constrain(adsr.setting[RELEASE_STAGE] + adsr.cv_mod, 1, STAGE_MAX_VALUE) - 1;
-        int total_stage_ticks = Proportion(effective_release, STAGE_MAX_VALUE, MAX_TICKS_R);
-        int ticks_remaining = total_stage_ticks - adsr.stage_ticks;
-        if (effective_release == 0) ticks_remaining = 0;
-        if (ticks_remaining <= 0 || adsr.amplitude <= 0) { // End of release; turn off envelope
-            adsr.stage = NO_STAGE;
-            adsr.stage_ticks = 0;
-            adsr.amplitude = 0;
-        } else {
-            simfloat decrease = adsr.amplitude / ticks_remaining;
-            adsr.amplitude -= decrease;
-        }
     }
 
     int get_modification_with_input(int in) {
