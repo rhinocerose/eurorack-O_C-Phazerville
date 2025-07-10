@@ -44,15 +44,57 @@ static constexpr int MIDI_CURRENT_SETUP = (MIDI_PARAMETER_COUNT * MIDI_SETUP_COU
 static constexpr int MIDI_SETTING_COUNT = (MIDI_CURRENT_SETUP + 1);
 static constexpr int MIDI_LOG_MAX_SIZE = 101;
 
-// Icons that are used next to the menu items
-const uint8_t MIDI_midi_icon[8] = {0x3c, 0x42, 0x91, 0x45, 0x45, 0x91, 0x42, 0x3c};
-const uint8_t MIDI_note_icon[8] = {0xc0, 0xe0, 0xe0, 0xe0, 0x7f, 0x02, 0x14, 0x08};
-const uint8_t MIDI_clock_icon[8] = {0x9c, 0xa2, 0xc1, 0xcf, 0xc9, 0xa2, 0x9c, 0x00};
+enum MIDI_IN_FUNCTION : uint8_t {
+  // T32 only, deprecated
+    MIDI_IN_OFF,
+    MIDI_IN_NOTE = HEM_MIDI_NOTE_OUT,
+    MIDI_IN_GATE = HEM_MIDI_GATE_OUT,
+    MIDI_IN_TRIGGER = HEM_MIDI_TRIG_OUT,
+    MIDI_IN_VELOCITY = HEM_MIDI_VEL_OUT,
+    MIDI_IN_MOD = HEM_MIDI_CC_OUT,
+    MIDI_IN_AFTERTOUCH = HEM_MIDI_AT_CHAN_OUT,
+    MIDI_IN_PITCHBEND = HEM_MIDI_PB_OUT,
+    /*
+    if (in_fn == MIDI_IN_EXPRESSION) cc = 11;
+    if (in_fn == MIDI_IN_PAN) cc = 10;
+    if (in_fn == MIDI_IN_HOLD) cc = 64;
+    if (in_fn == MIDI_IN_BREATH) cc = 2;
+    if (in_fn == MIDI_IN_Y_AXIS) cc = 74;
+    */
+    MIDI_IN_EXPRESSION,
+    MIDI_IN_PAN,
+    MIDI_IN_HOLD,
+    MIDI_IN_BREATH,
+    MIDI_IN_Y_AXIS,
+
+    // clock divisions
+    MIDI_IN_CLOCK_4TH = HEM_MIDI_CLOCK_OUT,
+    MIDI_IN_CLOCK_8TH = HEM_MIDI_CLOCK_8_OUT,
+    MIDI_IN_CLOCK_16TH = HEM_MIDI_CLOCK_16_OUT,
+    MIDI_IN_CLOCK_24PPQN = HEM_MIDI_CLOCK_24_OUT,
+};
+
+enum MIDI_OUT_FUNCTION : uint8_t {
+    MIDI_OUT_OFF,
+    MIDI_OUT_NOTE,
+    MIDI_OUT_LEGATO,
+    MIDI_OUT_VELOCITY,
+    MIDI_OUT_MOD,
+    MIDI_OUT_AFTERTOUCH,
+    MIDI_OUT_PITCHBEND,
+    MIDI_OUT_EXPRESSION,
+    MIDI_OUT_PAN,
+    MIDI_OUT_HOLD,
+    MIDI_OUT_BREATH,
+    MIDI_OUT_Y_AXIS,
+
+    MIDI_OUT_FUNCTION_COUNT
+};
 
 const char* const midi_in_functions[17] = {
     "--", "Note", "Gate", "Trig", "Veloc", "Mod", "Aft", "Bend",  "Expr", "Pan", "Hold", "Brth", "yAxis", "Qtr", "8th", "16th", "24ppq"
 };
-const char* const midi_out_functions[12] = {
+const char* const midi_out_functions[MIDI_OUT_FUNCTION_COUNT] = {
     "--", "Note", "Leg.", "Veloc", "Mod", "Aft", "Bend", "Expr", "Pan", "Hold", "Brth", "yAxis"
 };
 
@@ -114,7 +156,7 @@ const settings::value_attr CaptainSettings[] = {
   // MIDI-to-CV
   { 0, 0, HEM_MIDI_MAX_FUNCTION, "", midi_fn_name, settings::STORAGE_TYPE_U8 },
   // CV-to-MIDI
-  { 0, 0, 11, "", midi_out_functions, settings::STORAGE_TYPE_U8 },
+  { 0, 0, MIDI_OUT_FUNCTION_COUNT-1, "", midi_out_functions, settings::STORAGE_TYPE_U8 },
 
   // Channel
   { 0, 0, 16, "", midi_channels, settings::STORAGE_TYPE_U8 },
@@ -135,53 +177,10 @@ enum CaptainsKeys : uint16_t {
   OUTPUT_MAP_KEY = 2 << 9,
 };
 
-enum MIDI_IN_FUNCTION : uint8_t {
-    MIDI_IN_OFF,
-    MIDI_IN_NOTE = HEM_MIDI_NOTE_OUT,
-    MIDI_IN_GATE = HEM_MIDI_GATE_OUT,
-    MIDI_IN_TRIGGER = HEM_MIDI_TRIG_OUT,
-    MIDI_IN_VELOCITY = HEM_MIDI_VEL_OUT,
-    MIDI_IN_MOD = HEM_MIDI_CC_OUT,
-    MIDI_IN_AFTERTOUCH = HEM_MIDI_AT_CHAN_OUT,
-    MIDI_IN_PITCHBEND = HEM_MIDI_PB_OUT,
-    /*
-    if (in_fn == MIDI_IN_EXPRESSION) cc = 11;
-    if (in_fn == MIDI_IN_PAN) cc = 10;
-    if (in_fn == MIDI_IN_HOLD) cc = 64;
-    if (in_fn == MIDI_IN_BREATH) cc = 2;
-    if (in_fn == MIDI_IN_Y_AXIS) cc = 74;
-    */
-    MIDI_IN_EXPRESSION,
-    MIDI_IN_PAN,
-    MIDI_IN_HOLD,
-    MIDI_IN_BREATH,
-    MIDI_IN_Y_AXIS,
-
-    // clock divisions
-    MIDI_IN_CLOCK_4TH = HEM_MIDI_CLOCK_OUT,
-    MIDI_IN_CLOCK_8TH = HEM_MIDI_CLOCK_8_OUT,
-    MIDI_IN_CLOCK_16TH = HEM_MIDI_CLOCK_16_OUT,
-    MIDI_IN_CLOCK_24PPQN = HEM_MIDI_CLOCK_24_OUT,
-};
-
-enum MIDI_OUT_FUNCTION : uint8_t {
-    MIDI_OUT_OFF,
-    MIDI_OUT_NOTE,
-    MIDI_OUT_LEGATO,
-    MIDI_OUT_VELOCITY,
-    MIDI_OUT_MOD,
-    MIDI_OUT_AFTERTOUCH,
-    MIDI_OUT_PITCHBEND,
-    MIDI_OUT_EXPRESSION,
-    MIDI_OUT_PAN,
-    MIDI_OUT_HOLD,
-    MIDI_OUT_BREATH,
-    MIDI_OUT_Y_AXIS,
-};
-
 const char* const midi_messages[7] = {
     "Note", "Off", "CC#", "Aft", "Bend", "SysEx", "Diag"
 };
+
 //#define MIDI_DIAGNOSTIC
 struct CaptainMIDILog {
     bool midi_in; // 0 = out, 1 = in
@@ -304,15 +303,15 @@ public:
 
     void Controller() {
         // Process incoming MIDI traffic
-        midi_in(usbMIDI);
+        process_midi_in(usbMIDI);
 #ifdef ARDUINO_TEENSY41
-        midi_in(usbHostMIDI);
-        midi_in(MIDI1);
+        process_midi_in(usbHostMIDI);
+        process_midi_in(MIDI1);
         thisUSB.Task();
 #endif
 
         // Convert CV inputs to outgoing MIDI messages
-        midi_out();
+        process_midi_out();
 
         // set CV outputs from MIDI mappings
         for (int ch = 0; ch < DAC_CHANNEL_COUNT; ch++)
@@ -344,13 +343,17 @@ public:
     void EncoderEdit(int dir) {
 #ifdef __IMXRT1062__
       int pos = cursor.cursor_pos();
-      MIDIMapping &m = (pos < DAC_CHANNEL_COUNT) ?
+      bool input = pos < DAC_CHANNEL_COUNT;
+      MIDIMapping &m = input ?
           frame.MIDIState.mapping[pos] :
           frame.MIDIState.outmap[pos - DAC_CHANNEL_COUNT];
 
         switch (screen) {
           case 0:
-            m.function = constrain(m.function + dir, 0, HEM_MIDI_MAX_FUNCTION);
+            m.function = constrain(m.function + dir, 0,
+                input? HEM_MIDI_MAX_FUNCTION : MIDI_OUT_FUNCTION_COUNT-1);
+            if (input && m.function == HEM_MIDI_CC_OUT)
+              m.function_cc = -1; // learn
             break;
           case 1:
             m.channel = constrain(m.channel + dir, 0, 16);
@@ -651,7 +654,7 @@ private:
                             graphics.setPrintPos(70, list_item.y + 2);
                             graphics.print(midi_note_numbers[note_in[p]]);
                         }
-                    } else graphics.drawBitmap8(70, list_item.y + 2, 8, MIDI_midi_icon);
+                    } else graphics.drawBitmap8(70, list_item.y + 2, 8, MIDI_ICON);
                 }
 
                 // Indicate if the assignment is a note type
@@ -678,7 +681,7 @@ private:
                             graphics.setPrintPos(70, list_item.y + 2);
                             graphics.print(midi_note_numbers[note_out[p]]);
                         }
-                    } else graphics.drawBitmap8(70, list_item.y + 2, 8, MIDI_midi_icon);
+                    } else graphics.drawBitmap8(70, list_item.y + 2, 8, MIDI_ICON);
                 }
 
                 // Indicate if the assignment is a note type
@@ -774,7 +777,7 @@ private:
     }
 
     // CV inputs translated to MIDI messages
-    void midi_out() {
+    void process_midi_out() {
         auto &hMIDI = HS::frame.MIDIState;
         for (int ch = 0; ch < ADC_CHANNEL_COUNT; ch++)
         {
@@ -817,7 +820,7 @@ private:
                                 velocity = Proportion(In(vch), HSAPPLICATION_5V, 127);
                             }
                         }
-                        velocity = constrain(velocity, 0, 127);
+                        CONSTRAIN(velocity, 0, 127);
                         hMIDI.SendNoteOn(out_ch, midi_note, velocity);
                         UpdateLog(0, ch, 0, out_ch, midi_note, velocity);
                         indicator = 1;
@@ -850,7 +853,7 @@ private:
                     if (out_fn == MIDI_OUT_Y_AXIS) cc = 74;
 
                     int value = Proportion(In(ch), HSAPPLICATION_5V, 127);
-                    value = constrain(value, 0, 127);
+                    CONSTRAIN(value, 0, 127);
                     if (cc == 64) value = (value >= 60) ? 127 : 0; // On or off for sustain pedal
 
                     hMIDI.SendCC(out_ch, cc, value);
@@ -861,7 +864,7 @@ private:
                 // Aftertouch
                 if (out_fn == MIDI_OUT_AFTERTOUCH) {
                     int value = Proportion(In(ch), HSAPPLICATION_5V, 127);
-                    value = constrain(value, 0, 127);
+                    CONSTRAIN(value, 0, 127);
                     hMIDI.SendAfterTouch(out_ch, value);
                     UpdateLog(0, ch, 3, out_ch, 0, value);
                     indicator = 1;
@@ -870,7 +873,7 @@ private:
                 // Pitch Bend
                 if (out_fn == MIDI_OUT_PITCHBEND) {
                     int16_t bend = Proportion(In(ch) + HSAPPLICATION_3V, HSAPPLICATION_3V * 2, 16383);
-                    bend = constrain(bend, 0, 16383);
+                    CONSTRAIN(bend, 0, 16383);
                     hMIDI.SendPitchBend(out_ch, bend);
                     UpdateLog(0, ch, 4, out_ch, 0, bend - 8192);
                     indicator = 1;
@@ -882,7 +885,7 @@ private:
     }
 
     template <typename T1>
-    void midi_in(T1 &device) {
+    void process_midi_in(T1 &device) {
         if (device.read()) {
             uint8_t message = device.getType();
             uint8_t channel = device.getChannel();
@@ -893,13 +896,12 @@ private:
             if (message == HEM_MIDI_SYSEX) OnReceiveSysEx();
 
             HS::frame.MIDIState.ProcessMIDIMsg(channel, message, data1, data2);
-            //process_midi_in(message, channel, data1, data2);
+            //old_process_midi_in(message, channel, data1, data2);
         }
     }
 
-    [[ deprecated ]]
-    void process_midi_in(int message, int channel, int data1, int data2) {
-      // TODO: verify all this is now handled within HS::MIDIState, MIDIMapping
+    [[ deprecated ]] // TODO: verify all this is handled in HS::MIDIState, MIDIMapping
+    void old_process_midi_in(int message, int channel, int data1, int data2) {
 
         bool note_captured = 0; // A note or gate should only be captured by
         bool gate_captured = 0; // one assignment, to allow polyphony in the interface
