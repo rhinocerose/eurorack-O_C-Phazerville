@@ -116,25 +116,32 @@ void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
                     case HEM_MIDI_NOTE_INV_OUT:
                         map.output = MIDIQuantizer::CV(GetNoteLastInv(note_buffer[m_ch]));
                         break;
-                }
 
-                if ((map.function == HEM_MIDI_TRIG_OUT)
-                ||  (map.function == HEM_MIDI_TRIG_ALWAYS_OUT)
-                || ((map.function == HEM_MIDI_TRIG_1ST_OUT) && (note_buffer[m_ch].size() == 1)))
-                    map.trigout_q = 1;
+                    case HEM_MIDI_TRIG_1ST_OUT:
+                        if (note_buffer[m_ch].size() != 1) break;
+                    case HEM_MIDI_TRIG_OUT:
+                    case HEM_MIDI_TRIG_ALWAYS_OUT:
+                        map.trigout_q = 1;
+                        break;
 
-                if (map.function == HEM_MIDI_GATE_OUT)
-                    map.output = PULSE_VOLTAGE * (12 << 7);
-                if (map.function == HEM_MIDI_GATE_INV_OUT)
-                    map.output = 0;
-                if (map.function == HEM_MIDI_GATE_POLY_OUT)
+                    case HEM_MIDI_GATE_OUT:
+                        map.output = PULSE_VOLTAGE * (12 << 7);
+                        break;
+                    case HEM_MIDI_GATE_INV_OUT:
+                        map.output = 0;
+                        break;
+                    case HEM_MIDI_GATE_POLY_OUT:
                         if (CheckPolyVoice(map.dac_polyvoice)) map.output = PULSE_VOLTAGE * (12 << 7);
+                        break;
 
-                if (map.function == HEM_MIDI_VEL_OUT)
-                    map.output = (note_buffer[m_ch].size() > 0) ? Proportion(GetVel(note_buffer[m_ch], 1), 127, HEMISPHERE_MAX_CV) : 0;
-                if (map.function == HEM_MIDI_VEL_POLY_OUT) {
-                    map.output = (CheckPolyVoice(map.dac_polyvoice)) ? Proportion(poly_buffer[map.dac_polyvoice].vel, 127, HEMISPHERE_MAX_CV) : 0;
+                    case HEM_MIDI_VEL_OUT:
+                        map.output = (note_buffer[m_ch].size() > 0) ? Proportion(GetVel(note_buffer[m_ch], 1), 127, HEMISPHERE_MAX_CV) : 0;
+                        break;
+                    case HEM_MIDI_VEL_POLY_OUT:
+                        map.output = (CheckPolyVoice(map.dac_polyvoice)) ? Proportion(poly_buffer[map.dac_polyvoice].vel, 127, HEMISPHERE_MAX_CV) : 0;
+                        break;
                 }
+
 
                 if (!log_skip) log_this = 1; // Log all MIDI notes. Other stuff is conditional.
                 break;
@@ -143,35 +150,31 @@ void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
                 if (!map.InRange(msg.data1)) break;
                 map.semitone_mask = map.semitone_mask & ~(1u << (msg.data1 % 12));
 
-                if (note_buffer[m_ch].size() > 0) { // don't update output when last note is released
+                // don't update output when last note is released
+                // or if sustain is engaged
+                if (note_buffer[m_ch].size() > 0 && !CheckSustainLatch(m_ch)) {
                     switch(map.function) { // note # output functions
                         case HEM_MIDI_NOTE_OUT:
-                            if (CheckSustainLatch(m_ch)) break;
                             map.output = MIDIQuantizer::CV(GetNoteLast(note_buffer[m_ch]));
                             break;
 
                         case HEM_MIDI_NOTE_POLY_OUT:
-                            if (CheckSustainLatch(m_ch)) break;
                             if (CheckPolyVoice(map.dac_polyvoice)) map.output = MIDIQuantizer::CV(poly_buffer[map.dac_polyvoice].note);
                             break;
 
                         case HEM_MIDI_NOTE_MIN_OUT:
-                            if (CheckSustainLatch(m_ch)) break;
                             map.output = MIDIQuantizer::CV(GetNoteMin(note_buffer[m_ch]));
                             break;
 
                         case HEM_MIDI_NOTE_MAX_OUT:
-                            if (CheckSustainLatch(m_ch)) break;
                             map.output = MIDIQuantizer::CV(GetNoteMax(note_buffer[m_ch]));
                             break;
 
                         case HEM_MIDI_NOTE_PEDAL_OUT:
-                            if (CheckSustainLatch(m_ch)) break;
                             map.output = MIDIQuantizer::CV(GetNoteFirst(note_buffer[m_ch]));
                             break;
 
                         case HEM_MIDI_NOTE_INV_OUT:
-                            if (CheckSustainLatch(m_ch)) break;
                             map.output = MIDIQuantizer::CV(GetNoteLastInv(note_buffer[m_ch]));
                             break;
                     }
