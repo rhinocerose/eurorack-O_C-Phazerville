@@ -132,6 +132,10 @@ public:
 
   void set_screensaver_timeout(uint32_t seconds);
 
+  void JumpToMenu() {
+    jump_to_menu_ = true;
+  }
+
 private:
 
   uint32_t ticks_;
@@ -143,6 +147,7 @@ private:
   uint16_t button_ignore_mask_;
   bool screensaver_;
   bool preempt_screensaver_;
+  bool jump_to_menu_;
 
   /* Reverse the left and right encoders if Hemisphere Suite is installed on the left-hand
    * side of a Northern Light 2OC 4U module.
