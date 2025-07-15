@@ -21,7 +21,11 @@
 namespace HS {
 
 static constexpr int GATE_THRESHOLD = 15 << 7; // 1.25 volts
+#if defined(__IMXRT1062__)
 static constexpr int MIDIMAP_MAX = 32;
+#else
+static constexpr int MIDIMAP_MAX = 8;
+#endif
 static constexpr int TRIGMAP_MAX = OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX;
 static constexpr int CVMAP_MAX = ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX;
 
@@ -50,15 +54,15 @@ struct PolyphonyData {
     bool gate;
 };
 
-struct MIDIMapping {
-  // settings
+struct MIDIMapSettings {
   int8_t function_cc;
   uint8_t function;
   uint8_t channel; // MIDI channel number
   uint8_t dac_polyvoice; // select which voice to send from output
   int8_t transpose;
   uint8_t range_low, range_high;
-
+};
+struct MIDIMapping : public MIDIMapSettings {
   static constexpr size_t Size = 64; // Make this compatible with Packable
 
   // state

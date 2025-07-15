@@ -205,6 +205,9 @@ struct GlobalSettings {
 #endif
   HS::VOSegment user_waveforms[HS::VO_SEGMENT_COUNT];
   OC::Autotune_data auto_calibration_data[DAC_CHANNEL_LAST];
+
+  HS::QuantEngineSettings q_engines[QUANT_CHANNEL_COUNT];
+  HS::MIDIMapSettings midi_maps[MIDIMAP_MAX];
 #endif
 };
 
@@ -357,6 +360,22 @@ void save_global_settings() {
   memcpy(global_settings.auto_calibration_data, OC::auto_calibration_data, sizeof(OC::auto_calibration_data));
   // scaling settings:
   global_settings.DAC_scaling = OC::DAC::store_scaling();
+
+  for (int i = 0; i < QUANT_CHANNEL_COUNT; ++i) {
+    global_settings.q_engines[i].scale = HS::q_engine[i].scale;
+    global_settings.q_engines[i].mask = HS::q_engine[i].mask;
+    global_settings.q_engines[i].octave = HS::q_engine[i].octave;
+    global_settings.q_engines[i].root_note = HS::q_engine[i].root_note;
+  }
+  for (int i = 0; i < MIDIMAP_MAX; ++i) {
+    global_settings.midi_maps[i].channel       = HS::frame.MIDIState.mapping[i].channel      ;
+    global_settings.midi_maps[i].dac_polyvoice = HS::frame.MIDIState.mapping[i].dac_polyvoice;
+    global_settings.midi_maps[i].function      = HS::frame.MIDIState.mapping[i].function     ;
+    global_settings.midi_maps[i].function_cc   = HS::frame.MIDIState.mapping[i].function_cc  ;
+    global_settings.midi_maps[i].transpose     = HS::frame.MIDIState.mapping[i].transpose    ;
+    global_settings.midi_maps[i].range_low     = HS::frame.MIDIState.mapping[i].range_low    ;
+    global_settings.midi_maps[i].range_high    = HS::frame.MIDIState.mapping[i].range_high   ;
+  }
 
   global_settings_storage.Save(global_settings);
   SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
@@ -640,6 +659,25 @@ void Init(bool reset_settings) {
       DAC::choose_calibration_data(); // either use default data, or auto_calibration_data
       DAC::restore_scaling(global_settings.DAC_scaling); // recover output scaling settings
       Scales::Validate();
+
+      // restore q_engines and midi_maps
+      for (int i = 0; i < QUANT_CHANNEL_COUNT; ++i) {
+        HS::q_engine[i].scale     = global_settings.q_engines[i].scale;
+        HS::q_engine[i].mask      = global_settings.q_engines[i].mask;
+        HS::q_engine[i].octave    = global_settings.q_engines[i].octave;
+        HS::q_engine[i].root_note = global_settings.q_engines[i].root_note;
+      }
+      for (int i = 0; i < MIDIMAP_MAX; ++i) {
+        HS::frame.MIDIState.mapping[i].channel       = global_settings.midi_maps[i].channel      ;
+        HS::frame.MIDIState.mapping[i].dac_polyvoice = global_settings.midi_maps[i].dac_polyvoice;
+        HS::frame.MIDIState.mapping[i].function      = global_settings.midi_maps[i].function     ;
+        HS::frame.MIDIState.mapping[i].function_cc   = global_settings.midi_maps[i].function_cc  ;
+        HS::frame.MIDIState.mapping[i].transpose     = global_settings.midi_maps[i].transpose    ;
+        HS::frame.MIDIState.mapping[i].range_low     = global_settings.midi_maps[i].range_low    ;
+        HS::frame.MIDIState.mapping[i].range_high    = global_settings.midi_maps[i].range_high   ;
+      }
+      HS::frame.MIDIState.UpdateMidiChannelFilter();
+      HS::frame.MIDIState.UpdateMaxPolyphony();
     }
 #endif
 

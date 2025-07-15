@@ -210,12 +210,14 @@ namespace HS {
     QUANT_CHANNEL_COUNT
   };
 
-  struct QuantEngine {
-    braids::Quantizer quantizer;
-    int16_t scale = OC::Scales::SCALE_SEMI;
+  struct QuantEngineSettings {
+    int16_t scale; // = OC::Scales::SCALE_SEMI;
     int8_t root_note;
     int8_t octave;
-    uint16_t mask = 0xffff;
+    uint16_t mask; // = 0xffff;
+  };
+  struct QuantEngine : public QuantEngineSettings {
+    braids::Quantizer quantizer;
 
     void Reconfig() {
       quantizer.Configure(OC::Scales::GetScale(scale), mask);

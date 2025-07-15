@@ -115,7 +115,7 @@ public:
   bool Load(DATA_TYPE &data) {
 
     page_index_ = -1;
-    memset(&page_, 0, sizeof(page_));
+    page_ = {}; //memset(&page_, 0, sizeof(page_));
     page_.header.generation = -1;
     page_data next_page;
     for (size_t i = 0; i < PAGES; ++i) {
@@ -140,6 +140,7 @@ public:
       }
 
       page_index_ = i;
+      //page_ = next_page;
       memcpy(&page_, &next_page, sizeof(page_));
     }
     
@@ -148,6 +149,7 @@ public:
       page_.header.size = sizeof(DATA_TYPE);
       return false;
     } else {
+      //data = page_.data;
       memcpy(&data, &page_.data, sizeof(DATA_TYPE));
       return true;
     }
