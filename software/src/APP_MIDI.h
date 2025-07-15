@@ -495,13 +495,13 @@ public:
         // Setup. The currently-selected Setup will be the one we're sending. That's 40
         // bytes.
         uint8_t V[MIDI_PARAMETER_COUNT];
-        uint8_t offset = MIDI_PARAMETER_COUNT * get_setup_number();
         for (int i = 0; i < MIDI_PARAMETER_COUNT; i++)
         {
 #ifdef __IMXRT1062__
         // TODO
             int p = 0;
 #else
+            uint8_t offset = MIDI_PARAMETER_COUNT * get_setup_number();
             int p = values_[i + offset];
 #endif
             if (i > 15 && i < 24) p += 24; // These are signed, so they need to be converted
@@ -520,7 +520,6 @@ public:
         // where to stash it.
         uint8_t V[MIDI_PARAMETER_COUNT];
         if (ExtractSysExData(V, 'M')) {
-            uint8_t offset = MIDI_PARAMETER_COUNT * get_setup_number();
             for (int i = 0; i < MIDI_PARAMETER_COUNT; i++)
             {
                 int p = (int)V[i];
@@ -528,6 +527,7 @@ public:
 #ifdef __IMXRT1062__
                 // TODO
 #else
+                uint8_t offset = MIDI_PARAMETER_COUNT * get_setup_number();
                 apply_value(i + offset, p);
 #endif
             }

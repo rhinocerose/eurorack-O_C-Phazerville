@@ -9,6 +9,11 @@
 #include "SD.h"
 #endif
 
+const int ProportionCV(const int cv_value, const int max_pixels, const int max_cv) {
+    int prop = constrain(Proportion(cv_value, max_cv, max_pixels), -max_pixels, max_pixels);
+    return prop;
+}
+
 namespace HS {
 
   uint32_t popup_tick; // for button feedback

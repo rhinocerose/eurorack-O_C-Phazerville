@@ -33,10 +33,10 @@ struct MIDIMessage {
   // values expected from MIDI library, so channel starts at 1 (one), not zero
   uint8_t channel, message, data1, data2;
 
-  const uint8_t chan() { return channel - 1; }
-  const uint8_t note() { return data1; }
-  const uint8_t vel() { return data2; }
-  const bool IsNote() { return message == HEM_MIDI_NOTE_ON; }
+  const uint8_t chan() const { return channel - 1; }
+  const uint8_t note() const { return data1; }
+  const uint8_t vel() const { return data2; }
+  const bool IsNote() const { return message == HEM_MIDI_NOTE_ON; }
 };
 
 using MIDILogEntry = MIDIMessage;

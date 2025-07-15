@@ -304,7 +304,4 @@ constexpr int Proportion(const int numerator, const int denominator, const int m
  *              ----------------- = ----------
  *              HEMISPHERE_MAX_CV   max_pixels
  */
-static const int ProportionCV(const int cv_value, const int max_pixels, const int max_cv = HEMISPHERE_MAX_CV) {
-    int prop = constrain(Proportion(cv_value, max_cv, max_pixels), -max_pixels, max_pixels);
-    return prop;
-}
+const int ProportionCV(const int cv_value, const int max_pixels, const int max_cv = HEMISPHERE_MAX_CV);
