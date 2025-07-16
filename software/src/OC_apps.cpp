@@ -666,6 +666,7 @@ void Init(bool reset_settings) {
         HS::q_engine[i].mask      = global_settings.q_engines[i].mask;
         HS::q_engine[i].octave    = global_settings.q_engines[i].octave;
         HS::q_engine[i].root_note = global_settings.q_engines[i].root_note;
+        HS::q_engine[i].Reconfig();
       }
       for (int i = 0; i < MIDIMAP_MAX; ++i) {
         HS::frame.MIDIState.mapping[i].channel       = global_settings.midi_maps[i].channel      ;

@@ -219,6 +219,13 @@ namespace HS {
   struct QuantEngine : public QuantEngineSettings {
     braids::Quantizer quantizer;
 
+    QuantEngine() {
+      scale = OC::Scales::SCALE_SEMI;
+      mask = 0xffff;
+      quantizer.Init();
+      Reconfig();
+    }
+
     void Reconfig() {
       quantizer.Configure(OC::Scales::GetScale(scale), mask);
     }

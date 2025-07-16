@@ -60,10 +60,12 @@ public:
     void Start() {
         audio_app.Init();
 
+        /* Hemisphere already does this...
+         * assuming Hemisphere is always included next to Quadrants...
         for (int i = 0; i < QUANT_CHANNEL_COUNT; ++i) {
-            q_engine[i].quantizer.Init();
             q_engine[i].Configure( (i<4)? OC::Scales::SCALE_SEMI : i-4, 0xffff);
         }
+        */
 
         SetApplet(HEM_SIDE(0), HS::get_applet_index_by_id(18)); // DualTM
         SetApplet(HEM_SIDE(1), HS::get_applet_index_by_id(15)); // EuclidX

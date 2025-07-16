@@ -239,10 +239,8 @@ public:
 
 };
 
-// 4 extra presets for global data... it's a dirty hack for T32,
-// if you're willing to hoard most of the EEPROM space just for Hemisphere.
-// This pretty much kills Custom Builds.
-HemispherePreset hem_presets[HEM_NR_OF_PRESETS + 4];
+// 1 extra preset for global data... it's a dirty hack for T32.
+HemispherePreset hem_presets[HEM_NR_OF_PRESETS + 1];
 HemispherePreset *hem_active_preset = 0;
 #endif
 
@@ -264,10 +262,8 @@ public:
         clock_setup = 0;
 
         // Defaults for Q-engine settings.
-        // These are overwritten later by Calibr8or::Start(),
-        // thus completing the hack of persistent quantizer settings on T32
+        // These are overwritten later when global settings are loaded.
         for (int i = 0; i < QUANT_CHANNEL_COUNT; ++i) {
-            q_engine[i].quantizer.Init();
             q_engine[i].Configure( (i<4)? OC::Scales::SCALE_SEMI : i-4, 0xffff);
         }
 
@@ -287,21 +283,6 @@ public:
 #else
         if (!hem_active_preset)
             LoadFromPreset(0);
-
-        // Restore global quantizer settings
-        for (size_t qslot = 0; qslot < QUANT_CHANNEL_COUNT; ++qslot) {
-          uint64_t data = hem_presets[HEM_NR_OF_PRESETS + 1 + (qslot/3)].GetData(HEM_SIDE(qslot));
-          if (data == 0) break; // don't load blanks
-          auto &q = q_engine[qslot];
-          UnpackPackables(data,
-              q.scale,
-              q.octave,
-              q.root_note,
-              q.mask
-              );
-          q.Reconfig();
-        }
-
 #endif
     }
     void Suspend() {
@@ -1537,7 +1518,7 @@ static constexpr size_t HEMISPHERE_storageSize() {
 #ifdef __IMXRT1062__
     return 0;
 #else
-    return HemispherePreset::storageSize() * (HEM_NR_OF_PRESETS + 4);
+    return HemispherePreset::storageSize() * (HEM_NR_OF_PRESETS + 1);
 #endif
 }
 
@@ -1551,20 +1532,8 @@ static size_t HEMISPHERE_save(void *storage) {
 
     hem_presets[HEM_NR_OF_PRESETS].SetGlobals(HS::frame.MIDIState.pc_channel);
 
-    // Global quantizer settings
-    for (size_t qslot = 0; qslot < QUANT_CHANNEL_COUNT; ++qslot) {
-      auto &q = q_engine[qslot];
-      uint64_t data = PackPackables(
-          q.scale,
-          q.octave,
-          q.root_note,
-          q.mask);
-      // dirty haxxx
-      hem_presets[HEM_NR_OF_PRESETS + 1 + (qslot/3)].SetData(HEM_SIDE(qslot), data);
-    }
-
     size_t used = 0;
-    for (int i = 0; i < HEM_NR_OF_PRESETS + 4; ++i) {
+    for (int i = 0; i < HEM_NR_OF_PRESETS + 1; ++i) {
         used += hem_presets[i].Save(static_cast<char*>(storage) + used);
     }
     return used;
@@ -1576,7 +1545,7 @@ static size_t HEMISPHERE_restore(const void *storage) {
     return 0;
 #else
     size_t used = 0;
-    for (int i = 0; i < HEM_NR_OF_PRESETS + 4; ++i) {
+    for (int i = 0; i < HEM_NR_OF_PRESETS + 1; ++i) {
         used += hem_presets[i].Restore(static_cast<const char*>(storage) + used);
     }
 
