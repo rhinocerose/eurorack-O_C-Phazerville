@@ -1061,6 +1061,9 @@ public:
 
         case UI::EVENT_BUTTON_LONG_PRESS:
             if (event.control == OC::CONTROL_BUTTON_B) ToggleConfigMenu();
+            break;
+
+        case UI::EVENT_BUTTON_LONG_RELEASE:
             if (event.control == OC::CONTROL_BUTTON_L) ToggleClockRun();
             break;
 
