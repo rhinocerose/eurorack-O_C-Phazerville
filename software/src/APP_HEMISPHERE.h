@@ -150,7 +150,7 @@ public:
       uint16_t trigmap = 0;
       for (size_t i = 0; i < 4; ++i) {
         trigmap |= (uint16_t(HS::trigmap[i].source + 1) & 0x0F) << (i*4);
-        cvmap |= (uint16_t(HS::cvmap[i].source) & 0x0F) << (i*4);
+        cvmap |= (uint16_t(HS::cvmap[i].source + 1) & 0x0F) << (i*4);
       }
 
       bool changed = (uint16_t(values_[HEMISPHERE_TRIGMAP]) != trigmap)
@@ -364,9 +364,15 @@ public:
         APPLET_METADATA_KEY = 0, // applet ids
         CLOCK_DATA_KEY = 1,
         GLOBALS_KEY = 2,
-        INPUT_MAP_KEY = 3,
+        OLD_INPUT_MAP_KEY = 3,
+
+        OUTSKIP_KEY = 4,
+        TRIGMAP_KEY = 5, // 4 x 16-bit DigitalInputMap
+        CVMAP_KEY = 6, // 4 x 16-bit CVInputMap
+
         APPLET_L_DATA_KEY = 10,
         APPLET_R_DATA_KEY = 11,
+
 
         FILTERMASK1_KEY = 100,
         FILTERMASK2_KEY = 101,
@@ -388,14 +394,19 @@ public:
         global_data = ClockSetup_instance.GetGlobals();
         PhzConfig::setValue(preset_key | GLOBALS_KEY, global_data);
 
-        // Input Mappings
         uint64_t data = 0;
-        for (size_t i = 0; i < 4; ++i) {
-          Pack(data, PackLocation{0 + i*16, 4}, HS::trigmap[i].source + 1);
-          Pack(data, PackLocation{4 + i*16, 4}, HS::cvmap[i].source);
-          Pack(data, PackLocation{8 + i*16, 8}, HS::frame.clockskip[i]);
+        // Input Mappings
+        data = PackPackables(HS::trigmap[0], HS::trigmap[1], HS::trigmap[2], HS::trigmap[3]);
+        PhzConfig::setValue(preset_key | TRIGMAP_KEY, data);
+
+        data = PackPackables(HS::cvmap[0], HS::cvmap[1], HS::cvmap[2], HS::cvmap[3]);
+        PhzConfig::setValue(preset_key | CVMAP_KEY, data);
+
+        data = 0;
+        for (size_t i = 0; i < DAC_CHANNEL_COUNT; ++i) {
+          Pack(data, PackLocation{i*8, 8}, HS::frame.clockskip[i]);
         }
-        PhzConfig::setValue(preset_key | INPUT_MAP_KEY, data);
+        PhzConfig::setValue(preset_key | OUTSKIP_KEY, data);
 
         data = 0;
         for (size_t h = 0; h < 2; h++)
@@ -469,16 +480,29 @@ public:
         ClockSetup_instance.SetGlobals(global_data);
 
         // Input Mappings
-        PhzConfig::getValue(preset_key | INPUT_MAP_KEY, data);
-        for (size_t i = 0; i < 4; ++i)
-        {
-          int val = Unpack(data, PackLocation{i*16, 4});
-          if (val != 0) HS::trigmap[i].source = constrain(val - 1, -1, TRIGMAP_MAX);
+        if (!PhzConfig::getValue(preset_key | CVMAP_KEY, data)) {
+          PhzConfig::getValue(preset_key | OLD_INPUT_MAP_KEY, data);
+          for (size_t i = 0; i < 4; ++i)
+          {
+            int val = Unpack(data, PackLocation{i*16, 4});
+            if (val != 0) HS::trigmap[i].source = constrain(val - 1, -1, TRIGMAP_MAX);
 
-          val = Unpack(data, PackLocation{4 + i*16, 4});
-          if (val != 0) HS::cvmap[i].source = constrain(val - 1, 0, CVMAP_MAX);
+            val = Unpack(data, PackLocation{4 + i*16, 4});
+            if (val != 0) HS::cvmap[i].source = constrain(val - 1, 0, CVMAP_MAX);
 
-          HS::frame.clockskip[i] = Unpack(data, PackLocation{8 + i*16, 8});
+            HS::frame.clockskip[i] = Unpack(data, PackLocation{8 + i*16, 8});
+          }
+        } else {
+          UnpackPackables(data, HS::cvmap[0], HS::cvmap[1], HS::cvmap[2], HS::cvmap[3]);
+
+          PhzConfig::getValue(preset_key | TRIGMAP_KEY, data);
+          UnpackPackables(data, HS::trigmap[0], HS::trigmap[1], HS::trigmap[2], HS::trigmap[3]);
+
+          PhzConfig::getValue(preset_key | OUTSKIP_KEY, data);
+          for (size_t i = 0; i < DAC_CHANNEL_COUNT; ++i)
+          {
+            HS::frame.clockskip[i] = Unpack(data, PackLocation{i*8, 8});
+          }
         }
 
         // --- Global stuff ---
