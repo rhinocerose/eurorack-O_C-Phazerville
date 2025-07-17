@@ -697,8 +697,10 @@ public:
               // dotted screen border during applet select
               gfxFrame(0, 0, 128, 64, true);
             }
-            else
+            else {
               HS::available_applets[index].instance[zoom_slot]->BaseView(true, zoom_cursor < 0);
+              gfxDisplayInputMapEditor();
+            }
 
             // draw cursor for editing applet select and input maps
             if (zoom_cursor < 0) {
@@ -790,10 +792,16 @@ public:
                 select_mode = zoom_slot;
               break;
             //// 0=select; 1,2=trigmap; 3,4=cvmap; 5,6=outmode
-            case 1:
-            case 2:
             case 3:
             case 4:
+              if (CheckEditInputMapPress(
+                    zoom_cursor,
+                    IndexedInput(3, cvmap[zoom_slot*2]),
+                    IndexedInput(4, cvmap[zoom_slot*2+1])
+                  ))
+                break;
+            case 1:
+            case 2:
             case 5:
             case 6:
             default:
@@ -974,7 +982,8 @@ public:
               }
               case 3:
               case 4:
-                HS::cvmap[zoom_slot*2 + zoom_cursor - 3].ChangeSource(event.value);
+                if (!EditSelectedInputMap(event.value))
+                  HS::cvmap[zoom_slot*2 + zoom_cursor - 3].ChangeSource(event.value);
                 break;
               case 5:
               case 6:
@@ -1161,7 +1170,8 @@ private:
         case CVMAP2:
         case CVMAP3:
         case CVMAP4:
-            HS::cvmap[config_cursor-CVMAP1].ChangeSource(dir);
+            if (!EditSelectedInputMap(dir))
+              HS::cvmap[config_cursor-CVMAP1].ChangeSource(dir);
             break;
         case TRIG_LENGTH:
             HS::trig_length = (uint32_t) constrain( int(HS::trig_length + dir), 1, 127);
@@ -1234,14 +1244,22 @@ private:
             HS::QuantizerEdit(config_cursor - QUANT1);
             break;
 
-        case TRIGMAP1:
-        case TRIGMAP2:
-        case TRIGMAP3:
-        case TRIGMAP4:
         case CVMAP1:
         case CVMAP2:
         case CVMAP3:
         case CVMAP4:
+          if (CheckEditInputMapPress(
+                config_cursor,
+                IndexedInput(CVMAP1, cvmap[0]),
+                IndexedInput(CVMAP2, cvmap[1]),
+                IndexedInput(CVMAP3, cvmap[2]),
+                IndexedInput(CVMAP4, cvmap[3])
+              ))
+            break;
+        case TRIGMAP1:
+        case TRIGMAP2:
+        case TRIGMAP3:
+        case TRIGMAP4:
         case TRIG_LENGTH:
         case MIDI_PC_CHANNEL:
         default:
@@ -1304,6 +1322,7 @@ private:
           break;
         }
 
+        gfxDisplayInputMapEditor();
     }
 
     void DrawQuantizerConfig() {
