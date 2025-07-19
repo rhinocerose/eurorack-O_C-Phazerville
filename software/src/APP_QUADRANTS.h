@@ -1189,7 +1189,7 @@ private:
             break;
 
         case SCREENSAVER_MODE:
-            ++HS::screensaver_mode %= 4;
+            ++HS::screensaver_mode %= SCREENSAVER_MODE_COUNT;
             break;
 
         case CURSOR_MODE:
@@ -1298,13 +1298,6 @@ private:
         gfxPrint(HS::trig_length);
         gfxPrint("ms");
 
-        const char * ssmodes[4] = { "[blank]", "Meters", "Zaps",
-        #if defined(__IMXRT1062__)
-        "Stars"
-        #else
-        "Zips"
-        #endif
-        };
         gfxPrint(1, 25, "Screensaver:  ");
         gfxPrint( ssmodes[HS::screensaver_mode] );
 
@@ -1446,13 +1439,15 @@ void QUADRANTS_menu() {
 
 void QUADRANTS_screensaver() {
     switch (HS::screensaver_mode) {
-    case 0x3: // Zips or Stars
-        ZapScreensaver(true);
+    case SCREEN_ZIPS:
+    case SCREEN_STARS:
+    case SCREEN_ZAPS:
+        ZapScreensaver(screensaver_mode - SCREEN_ZAPS);
         break;
-    case 0x2: // Zaps
-        ZapScreensaver();
+    case SCREEN_SCOPE: // output scope
+        OC::scope_render();
         break;
-    case 0x1: // Meters
+    case SCREEN_METERS: // Meters
         quad_manager.BaseScreensaver(true); // show note names
         break;
     default: break; // blank screen

@@ -108,6 +108,17 @@ namespace HS {
     QUANT_CHANNEL_COUNT
   };
 
+  enum ScreensaverMode {
+    SCREEN_BLANK,
+    SCREEN_METERS,
+    SCREEN_SCOPE,
+    SCREEN_ZAPS,
+    SCREEN_STARS,
+    SCREEN_ZIPS,
+
+    SCREENSAVER_MODE_COUNT
+  };
+
   struct QuantEngineSettings {
     int16_t scale; // = OC::Scales::SCALE_SEMI;
     int8_t root_note;
@@ -196,6 +207,7 @@ namespace HS {
   extern bool auto_save_enabled;
   extern uint8_t trig_length;
   extern uint8_t screensaver_mode;
+  extern const char * const ssmodes[];
 
   extern OC::menu::ScreenCursor<5> showhide_cursor;
 
