@@ -322,9 +322,9 @@ void save_global_settings() {
     PhzConfig::setValue(TURING_MACHINES_KEY | i, data);
   }
 
+  data = 0;
   // User Waveform (custom VectorOsc shapes)
   for (size_t i = 0; i < HS::VO_SEGMENT_COUNT; ++i) {
-    data = 0;
     Pack(data, PackLocation{(i & 0x3) * 16, 16}, uint16_t(HS::user_waveforms[i].level) << 8 | HS::user_waveforms[i].time);
 
     if ((i & 0x3) == 0x3) {
@@ -336,7 +336,7 @@ void save_global_settings() {
   // Auto Calibration Data
   for (size_t i = 0; i < DAC_CHANNEL_LAST; ++i) {
     data = 0;
-    PhzConfig::setValue(AUTOCAL_KEY | 0xff, auto_calibration_data[i].use_auto_calibration_);
+    PhzConfig::setValue(AUTOCAL_KEY | (0xff - i), auto_calibration_data[i].use_auto_calibration_);
 
     for (size_t oct = 0; oct < OCTAVES + 1; ++oct) {
       Pack(data, PackLocation{(oct & 0x3) * 16, 16}, auto_calibration_data[i].auto_calibrated_octaves[oct]);
@@ -613,14 +613,15 @@ void Init(bool reset_settings) {
           if (!PhzConfig::getValue(WAVEFORMS_KEY | (i >> 2), data))
             break;
         }
-        HS::user_waveforms[i].level = (data >> 8) & 0xff;
-        HS::user_waveforms[i].time = data & 0xff;
+        uint16_t wavedata = Unpack(data, PackLocation{(i & 0x3) * 16, 16});
+        HS::user_waveforms[i].level = (wavedata >> 8) & 0xff;
+        HS::user_waveforms[i].time = wavedata & 0xff;
       }
 
       // -- Auto Calibration Data
       for (size_t i = 0; i < DAC_CHANNEL_LAST; ++i) {
         data = 0;
-        if (!PhzConfig::getValue(AUTOCAL_KEY | 0xff, data))
+        if (!PhzConfig::getValue(AUTOCAL_KEY | (0xff - i), data))
           break;
         auto_calibration_data[i].use_auto_calibration_ = data;
         for (size_t oct = 0; oct < OCTAVES + 1; ++oct) {
