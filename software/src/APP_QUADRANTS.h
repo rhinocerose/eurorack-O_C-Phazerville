@@ -1048,6 +1048,12 @@ private:
           return;
         }
 
+        if (preset_cursor && isEditing) {
+          // bank select
+          bank_num = constrain(bank_num + dir, 0, 99);
+          return;
+        }
+
         switch (config_cursor) {
         case TRIGMAP1:
         case TRIGMAP2:
@@ -1099,7 +1105,19 @@ private:
         }
     }
     void ConfigButtonPush(int h) {
+      static uint8_t old_bank_num = 0xff;
         if (preset_cursor) {
+            // left enc toggles bank select
+            if (0 == h || isEditing) {
+              isEditing = !isEditing;
+              if (!isEditing) {
+                if (old_bank_num != bank_num) SetBank(bank_num);
+              } else
+                old_bank_num = bank_num;
+
+              return;
+            }
+
             // Save or Load on button push
             if (config_cursor == SAVE_PRESET)
                 StoreToPreset(preset_cursor-1);
@@ -1348,8 +1366,15 @@ private:
         gfxPrint(30, 1, "Preset: Bank# ");
         gfxPrint(bank_num);
         if (!SDcard_Ready) gfxInvert(78, 0, 30, 9);
-        gfxDottedLine(16, 11, 16, 63);
 
+        // bank select cursor
+        if (isEditing) {
+          gfxIcon(114, 11, UP_ICON);
+          return;
+        }
+
+        // Draw preset list
+        gfxDottedLine(16, 11, 16, 63);
         int y = 5 + constrain(preset_cursor,1,5)*10;
         gfxIcon(0, y, RIGHT_ICON);
         const int top = constrain(preset_cursor - 4, 1, QUAD_PRESET_COUNT) - 1;
