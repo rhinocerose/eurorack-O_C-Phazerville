@@ -81,16 +81,6 @@ public:
             switch (map.function) {
                 case HEM_MIDI_NOOP:
                     break;
-                case HEM_MIDI_CLOCK_OUT:
-                case HEM_MIDI_START_OUT:
-                case HEM_MIDI_TRIG_OUT:
-                case HEM_MIDI_TRIG_1ST_OUT:
-                case HEM_MIDI_TRIG_ALWAYS_OUT:
-                    if (map.trigout_q) {
-                        map.trigout_q = 0;
-                        ClockOut(ch);
-                    }
-                    break;
                 case HEM_MIDI_RUN_OUT:
                     GateOut(ch, frame.MIDIState.clock_run);
                     break;

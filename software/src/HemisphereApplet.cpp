@@ -88,7 +88,7 @@ void HS::IOFrame::Load() {
     gate_high[1] = OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_2>();
     gate_high[2] = OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_3>();
     gate_high[3] = OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_4>();
-    for (int i = 0; i < ADC_CHANNEL_LAST; ++i) {
+    for (int i = 0; i < ADC_CHANNEL_COUNT; ++i) {
         // Set CV inputs
         inputs[i] = OC::ADC::raw_pitch_value(ADC_CHANNEL(i));
 
@@ -99,10 +99,18 @@ void HS::IOFrame::Load() {
             changed_cv[i] = 1;
             last_cv[i] = inputs[i];
         } else changed_cv[i] = 0;
+    }
 
-        // Handle clock pulse timing
+    // Handle clock pulse timing
+    for (int i = 0; i < DAC_CHANNEL_COUNT; ++i) {
         if (clock_countdown[i] > 0) {
             if (--clock_countdown[i] == 0) outputs[i] = 0;
+        }
+    }
+    for (int i = 0; i < MIDIMAP_MAX; ++i) {
+        MIDIMapping& m = MIDIState.mapping[i];
+        if (m.trigout_countdown > 0) {
+            if (--m.trigout_countdown == 0) m.output = 0;
         }
     }
 

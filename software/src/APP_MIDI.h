@@ -322,15 +322,7 @@ public:
 
             MIDIMapping &map = frame.MIDIState.mapping[ch];
 
-            if (map.IsTrigger()) {
-              if (map.trigout_q) {
-                ClockOut(ch);
-                map.trigout_q = 0;
-              }
-              // else, do nothing
-            } else {
-              Out(ch, map.output);
-            }
+            Out(ch, map.output);
         }
     }
 

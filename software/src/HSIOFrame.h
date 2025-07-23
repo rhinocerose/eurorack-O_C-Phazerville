@@ -71,7 +71,7 @@ struct MIDIMapping : public MIDIMapSettings {
   static constexpr size_t Size = 64; // Make this compatible with Packable
 
   // state
-  bool trigout_q; // TRIGGA
+  int16_t trigout_countdown;
   uint16_t semitone_mask; // which notes are currently on
   int16_t output; // translated CV values
 
@@ -92,9 +92,13 @@ struct MIDIMapping : public MIDIMapSettings {
     if (function == HEM_MIDI_CLOCK_16_OUT) mod = 6;
     return mod;
   }
+  void ClockOut() {
+    trigout_countdown = HEMISPHERE_CLOCK_TICKS * HS::trig_length;
+    output = HEMISPHERE_MAX_CV;
+  }
   void ProcessClock(int count) {
     if (IsClock() && (count % clock_mod() == 1))
-      trigout_q = 1;
+      ClockOut();
   }
   const bool InRange(uint8_t note) const {
     return (note >= range_low && note <= range_high);
