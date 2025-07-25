@@ -29,14 +29,12 @@ public:
       Serial.println("Unable to access the SD card");
     }
     else {
-      wavplayer[0].enableInterpolation(true);
-      //wavplayer[1].enableInterpolation(true);
-      wavplayer[0].setBufferInPSRAM(false);
-      //wavplayer[1].setBufferInPSRAM(true);
+      wavplayer.enableInterpolation(true);
+      wavplayer.setBufferInPSRAM(false);
     }
   }
   void Unload() {
-    wavplayer[0].stop();
+    wavplayer.stop();
   }
 
   void Controller() {
@@ -46,21 +44,19 @@ public:
     float gain = dbToScalar(level) + level_cv.InF(0.0f);
     if (gain < 0.0f) gain = 0.0f;
 
-    const int i = 0;
     FileLevel(gain);
     if (tempo_sync)
       FileMatchTempo();
     else
       FileRate(0.01f * playrate + playrate_cv.InF(0.0f));
 
-    if (HS::clock_m.EndOfBeat()) {
-      if (loop_length[i] && loop_on[i]) {
-        if (++loop_count[i] >= loop_length[i])
-          FileHotCue(i);
+    if (HS::clock_m.EndOfBeat() && FileIsPlaying()) {
+      if (loop_length && loop_on) {
+        if (++loop_count >= loop_length)
+          retrig = true;
       }
 
-      if (tempo_sync)
-        wavplayer[i].syncTrig();
+      sync_trig = true;
     }
 
     titlestat[7] = FileIsPlaying() ? '*' : ' ';
@@ -72,22 +68,35 @@ public:
 
   void mainloop() {
     if (SDcard_Ready) {
-      for (int ch = 0; ch < 1; ++ch) {
-        if (wavplayer_reload[ch]) {
-          FileLoad(ch);
-          wavplayer_reload[ch] = false;
+        if (wavplayer_reload) {
+          FileLoad();
+          wavplayer_reload = false;
         }
 
-        if (wavplayer_playtrig[ch] && go_time) {
-          wavplayer[ch].play();
-          wavplayer_playtrig[ch] = false;
+        if (wavplayer_playtrig && go_time) {
+          wavplayer.play();
+          loop_count = 0;
+          wavplayer_playtrig = false;
         }
 
         if (syncloopstart && go_time) {
           ToggleLoop();
           syncloopstart = false;
+          retrig = false;
         }
-      }
+        if (retrig) {
+          if (wavplayer.available()) {
+            wavplayer.retrigger();
+            loop_count = 0;
+          }
+          retrig = false;
+        }
+
+
+        if (tempo_sync && sync_trig) {
+          wavplayer.syncTrig();
+          sync_trig = false;
+        }
     }
   }
 
@@ -115,7 +124,7 @@ public:
         gfxIcon(42, y, (filter_on) ? SLEW_ICON : PhzIcons::tuner);
       }
     } else {
-      if (wavplayer_ready[0])
+      if (wavplayer_ready)
         gfxPrint(34, y, GetFileBPM());
       else
         gfxPrint(34, y, "(--)");
@@ -135,7 +144,7 @@ public:
 
     y += 10;
     if (FileIsPlaying()) {
-      uint32_t tmilli = GetFileTime(0);
+      uint32_t tmilli = GetFileTime();
       uint32_t tsec = tmilli / 1000;
       uint32_t tmin = tsec / 60;
       tmilli %= 1000;
@@ -170,10 +179,10 @@ public:
     y += 10;
     gfxPrint(1, y, "Loop:");
     gfxStartCursor();
-    graphics.printf("%2u", loop_length[0]);
+    graphics.printf("%2u", loop_length);
     gfxEndCursor(cursor == LOOP_LENGTH);
 
-    gfxIcon(52, y, loop_on[0] ? CHECK_ON_ICON : CHECK_OFF_ICON);
+    gfxIcon(52, y, loop_on ? CHECK_ON_ICON : CHECK_OFF_ICON);
     if (cursor == LOOP_ENABLE)
       gfxFrame(51, y-1, 10, 10);
 
@@ -212,7 +221,7 @@ public:
     if(EditSelectedInputMap(direction)) return;
     switch (cursor) {
       case FILE_NUM:
-        ChangeToFile(0, GetFileNum() + direction);
+        ChangeToFile(GetFileNum() + direction);
         break;
       case PLAYSTOP_BUTTON:
         // shouldn't happen
@@ -238,21 +247,23 @@ public:
         playrate_cv.ChangeSource(direction);
         break;
       case LOOP_LENGTH:
-        loop_length[0] = constrain(loop_length[0] + direction, 0, 128);
+        loop_length = constrain(loop_length + direction, 0, 128);
         break;
     }
   }
 
   uint64_t OnDataRequest() {
     // STOP playback to avoid SD card hangup on preset save
-    wavplayer[0].stop();
+    wavplayer.stop();
     // TODO: djfilter_cv (16bits)
-    return PackPackables(level, level_cv, playrate, playrate_cv, wavplayer_select[0], djfilter);
+    return PackPackables(level, level_cv, uint8_t(playrate), playrate_cv, wavplayer_select, djfilter);
   }
   void OnDataReceive(uint64_t data) {
     // TODO: djfilter_cv (16bits)
-    UnpackPackables(data, level, level_cv, playrate, playrate_cv, wavplayer_select[0], djfilter);
-    ChangeToFile(0, wavplayer_select[0]);
+    int8_t rate;
+    UnpackPackables(data, level, level_cv, rate, playrate_cv, wavplayer_select, djfilter);
+    playrate = rate;
+    ChangeToFile(wavplayer_select);
   }
 
   AudioStream* InputStream() override {
@@ -288,16 +299,21 @@ private:
   int8_t djfilter = 0; // positive is hi-pass, negative low-pass
   int8_t djfilter_mod = 0; // for display
   CVInputMap djfilter_cv;
+  // flags
   bool lowcut = false;
   bool filter_on = false;
-  CVInputMap level_cv;
-  int8_t playrate = 100; // TODO: we need 9 bits for +/-200%
-  CVInputMap playrate_cv;
-  bool go_time;
   bool tempo_sync = true;
 
+  CVInputMap level_cv;
+  int16_t playrate = 100; // TODO: we need 9 bits for +/-200%
+  CVInputMap playrate_cv;
+  // signals from ISR->loop
+  bool go_time = false;
+  bool sync_trig = false;
+  bool retrig = false;
+
   AudioPassthrough<Channels> input;
-  AudioPlaySdResmp      wavplayer[1];
+  AudioPlaySdResmp      wavplayer;
   AudioFilterStateVariable hpfilter[2];
   AudioMixer4           mixer[2];
   AudioPassthrough<Channels> output;
@@ -305,66 +321,61 @@ private:
   std::array<AudioConnection, Channels> in_conns;
   std::array<AudioConnection, Channels> out_conns;
 
-  AudioConnection          patchCordWav1L{wavplayer[0], 0, hpfilter[0], 0};
-  AudioConnection          patchCordWav1R{wavplayer[0], 1, hpfilter[1], 0};
-  AudioConnection          patchCordWav1Ldry{wavplayer[0], 0, mixer[0], 0};
-  AudioConnection          patchCordWav1Rdry{wavplayer[0], 1, mixer[1], 0};
+  AudioConnection          patchCordWav1L{wavplayer, 0, hpfilter[0], 0};
+  AudioConnection          patchCordWav1R{wavplayer, 1, hpfilter[1], 0};
+  AudioConnection          patchCordWav1Ldry{wavplayer, 0, mixer[0], 0};
+  AudioConnection          patchCordWav1Rdry{wavplayer, 1, mixer[1], 0};
   AudioConnection          patchCordWavHPF1L{hpfilter[0], 2, mixer[0], 1};
   AudioConnection          patchCordWavHPF1R{hpfilter[1], 2, mixer[1], 1};
   AudioConnection          patchCordWavLPF2L{hpfilter[0], 0, mixer[0], 2};
   AudioConnection          patchCordWavLPF2R{hpfilter[1], 0, mixer[1], 2};
 
   // SD player vars, copied from other dev branch
-  bool wavplayer_reload[2] = {true, true};
-  bool wavplayer_playtrig[2] = {false};
-  bool wavplayer_ready[2] = {false};
-  uint8_t wavplayer_select[2] = { 1, 10 };
-  uint8_t loop_length[2] = { 8, 8 };
-  int8_t loop_count[2] = { 0, 0 };
-  bool loop_on[2] = { false, false };
+  bool wavplayer_reload = true;
+  bool wavplayer_playtrig = false;
+  bool wavplayer_ready = false;
+  uint8_t wavplayer_select = 1;
+  uint8_t loop_length = 8;
+  int8_t loop_count = 0;
+  bool loop_on = false;
   bool syncloopstart = false;
 
   // SD file player functions
-  void FileLoad(int ch = 0) {
+  void FileLoad() {
     char filename[] = "000.WAV";
-    filename[1] += wavplayer_select[ch] / 10;
-    filename[2] += wavplayer_select[ch] % 10;
-    wavplayer_ready[ch] = wavplayer[ch].playWav(filename);
+    filename[1] += wavplayer_select / 10;
+    filename[2] += wavplayer_select % 10;
+    wavplayer_ready = wavplayer.playWav(filename);
   }
-  void StartPlaying(int ch = 0) {
-    wavplayer_playtrig[ch] = true;
-    loop_count[ch] = -1;
+  void StartPlaying() {
+    wavplayer_playtrig = true;
     go_time = false;
   }
-  bool FileIsPlaying(int ch = 0) {
-    return wavplayer[ch].isPlaying();
+  bool FileIsPlaying() {
+    return wavplayer.isPlaying();
   }
-  void ToggleFilePlayer(int ch = 0) {
-    if (wavplayer[ch].isPlaying()) {
-      wavplayer[ch].stop();
+  void ToggleFilePlayer() {
+    if (wavplayer.isPlaying()) {
+      wavplayer.stop();
+      wavplayer.setPlayStart(play_start_sample);
+      loop_on = false;
     } else if (SDcard_Ready) {
-      StartPlaying(ch);
+      StartPlaying();
     }
   }
-  void FileHotCue(int ch = 0) {
-    if (wavplayer[ch].available()) {
-      wavplayer[ch].retrigger();
-      loop_count[ch] = 0;
-    }
-  }
-  void ToggleLoop(int ch = 0) {
-    if (loop_length[ch] && !loop_on[ch]) {
-      const uint32_t start = wavplayer[ch].isPlaying() ?
-                    wavplayer[ch].getPosition() : 0;
-      wavplayer[ch].setLoopStart( start );
-      wavplayer[ch].setPlayStart(play_start_loop);
-      if (wavplayer[ch].available())
-        wavplayer[ch].retrigger();
-      loop_on[ch] = true;
-      loop_count[ch] = 0;
+  void ToggleLoop() {
+    if (loop_length && !loop_on) {
+      const uint32_t start = wavplayer.isPlaying() ?
+                    wavplayer.getPosition() : 0;
+      wavplayer.setLoopStart( start );
+      wavplayer.setPlayStart(play_start_loop);
+      if (wavplayer.available())
+        wavplayer.retrigger();
+      loop_on = true;
+      loop_count = 0;
     } else {
-      wavplayer[ch].setPlayStart(play_start_sample);
-      loop_on[ch] = false;
+      wavplayer.setPlayStart(play_start_sample);
+      loop_on = false;
     }
   }
 
@@ -390,32 +401,24 @@ private:
     }
   }
 
-  // simple hooks for beat-sync callbacks
-  void FileToggle1() { ToggleFilePlayer(0); }
-  void FileToggle2() { ToggleFilePlayer(1); }
-  void FilePlay1() { StartPlaying(0); }
-  void FilePlay2() { StartPlaying(1); }
-  void FileLoopToggle1() { ToggleLoop(0); }
-  void FileLoopToggle2() { ToggleLoop(1); }
-
-  void ChangeToFile(int ch, int select) {
-    wavplayer_select[ch] = (uint8_t)constrain(select, 0, 99);
-    wavplayer_reload[ch] = true;
-    if (wavplayer[ch].isPlaying()) {
-      StartPlaying(ch);
+  void ChangeToFile(int select) {
+    wavplayer_select = (uint8_t)constrain(select, 0, 99);
+    wavplayer_reload = true;
+    if (wavplayer.isPlaying()) {
+      StartPlaying();
     }
   }
-  uint8_t GetFileNum(int ch = 0) {
-    return wavplayer_select[ch];
+  uint8_t GetFileNum() {
+    return wavplayer_select;
   }
-  uint32_t GetFileTime(int ch = 0) {
-    return wavplayer[ch].positionMillis();
+  uint32_t GetFileTime() {
+    return wavplayer.positionMillis();
   }
-  uint16_t GetFileBPM(int ch = 0) {
-    return (uint16_t)wavplayer[ch].getBPM();
+  uint16_t GetFileBPM() {
+    return (uint16_t)wavplayer.getBPM();
   }
   void FileMatchTempo() {
-    wavplayer[0].matchTempo(
+    wavplayer.matchTempo(
       HS::clock_m.GetTempoFloat() * (playrate * 0.01f + playrate_cv.InF(0.0f))
     );
   }
@@ -429,6 +432,6 @@ private:
   }
   void FileRate(float rate) {
     // bipolar CV has +/- 50% pitch bend
-    wavplayer[0].setPlaybackRate(rate);
+    wavplayer.setPlaybackRate(rate);
   }
 };
