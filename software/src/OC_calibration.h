@@ -16,6 +16,7 @@
 
 namespace OC {
 
+static constexpr uint16_t _ADC_OFFSET_NLM = 4095; // 0V == maximum 12-bit ADC value
 #ifdef NORTHERNLIGHT
 static constexpr uint16_t _ADC_OFFSET = (uint16_t)((float)pow(2,OC::ADC::kAdcResolution)*1.0f);   // ADC offset @3.3V
 #else
@@ -29,21 +30,21 @@ enum CALIBRATION_STEP {
   CENTER_DISPLAY,
 
   #ifdef VOR
-  DAC_A_VOLT_3m,  DAC_A_VOLT_6,
-  DAC_B_VOLT_3m,  DAC_B_VOLT_6,
-  DAC_C_VOLT_3m,  DAC_C_VOLT_6,
-  DAC_D_VOLT_3m,  DAC_D_VOLT_6,
+  DAC_A_VOLT_MIN, DAC_A_VOLT_HIGH,
+  DAC_B_VOLT_MIN, DAC_B_VOLT_HIGH,
+  DAC_C_VOLT_MIN, DAC_C_VOLT_HIGH,
+  DAC_D_VOLT_MIN, DAC_D_VOLT_HIGH,
   V_BIAS_BIPOLAR, V_BIAS_ASYMMETRIC,
   #else
-  DAC_A_VOLT_3m,  DAC_A_VOLT_5,
-  DAC_B_VOLT_3m,  DAC_B_VOLT_5,
-  DAC_C_VOLT_3m,  DAC_C_VOLT_5,
-  DAC_D_VOLT_3m,  DAC_D_VOLT_5,
+  DAC_A_VOLT_MIN, DAC_A_VOLT_HIGH,
+  DAC_B_VOLT_MIN, DAC_B_VOLT_HIGH,
+  DAC_C_VOLT_MIN, DAC_C_VOLT_HIGH,
+  DAC_D_VOLT_MIN, DAC_D_VOLT_HIGH,
 #ifdef ARDUINO_TEENSY41
-  DAC_E_VOLT_3m,  DAC_E_VOLT_5,
-  DAC_F_VOLT_3m,  DAC_F_VOLT_5,
-  DAC_G_VOLT_3m,  DAC_G_VOLT_5,
-  DAC_H_VOLT_3m,  DAC_H_VOLT_5,
+  DAC_E_VOLT_MIN, DAC_E_VOLT_HIGH,
+  DAC_F_VOLT_MIN, DAC_F_VOLT_HIGH,
+  DAC_G_VOLT_MIN, DAC_G_VOLT_HIGH,
+  DAC_H_VOLT_MIN, DAC_H_VOLT_HIGH,
 #endif
   #endif
 
@@ -88,15 +89,15 @@ struct CalibrationStep {
 
 static constexpr DAC_CHANNEL &step_to_channel(const int step) {
 #ifdef ARDUINO_TEENSY41
-  if (step >= DAC_H_VOLT_3m) return DAC_CHANNEL_H;
-  if (step >= DAC_G_VOLT_3m) return DAC_CHANNEL_G;
-  if (step >= DAC_F_VOLT_3m) return DAC_CHANNEL_F;
-  if (step >= DAC_E_VOLT_3m) return DAC_CHANNEL_E;
+  if (step >= DAC_H_VOLT_MIN) return DAC_CHANNEL_H;
+  if (step >= DAC_G_VOLT_MIN) return DAC_CHANNEL_G;
+  if (step >= DAC_F_VOLT_MIN) return DAC_CHANNEL_F;
+  if (step >= DAC_E_VOLT_MIN) return DAC_CHANNEL_E;
 #endif
-  if (step >= DAC_D_VOLT_3m) return DAC_CHANNEL_D;
-  if (step >= DAC_C_VOLT_3m) return DAC_CHANNEL_C;
-  if (step >= DAC_B_VOLT_3m) return DAC_CHANNEL_B;
-  /*if (step >= DAC_A_VOLT_3m)*/ 
+  if (step >= DAC_D_VOLT_MIN) return DAC_CHANNEL_D;
+  if (step >= DAC_C_VOLT_MIN) return DAC_CHANNEL_C;
+  if (step >= DAC_B_VOLT_MIN) return DAC_CHANNEL_B;
+  /*if (step >= DAC_A_VOLT_MIN)*/ 
   return DAC_CHANNEL_A;
 }
 

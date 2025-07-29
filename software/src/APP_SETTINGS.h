@@ -65,7 +65,20 @@ public:
     }
   }
 
-  void SwitchToStep(CALIBRATION_STEP index) {
+  void SwitchToStep(int direction) {
+
+      if (calstate.current_step->calibration_type == CALIBRATE_OCTAVE && !calstate.used_defaults) {
+        // fine-tuning for CALIBRATE_DAC
+        int octave = current_octave + direction;
+        if ( !(octave < 0 || octave > min(OCTAVES, calstate.current_step->index + 7)) ) {
+          current_octave = octave;
+          calstate.encoder_value =
+              OC::calibration_data.dac.calibrated_octaves[step_to_channel(calstate.step)][current_octave];
+          return;
+        }
+      }
+
+      CALIBRATION_STEP index = static_cast<CALIBRATION_STEP>(calstate.step + direction);
       CONSTRAIN(index, CENTER_DISPLAY, CALIBRATION_EXIT);
       const CalibrationStep *next_step = &calibration_steps[index];
       if (next_step != calstate.current_step)
@@ -75,6 +88,12 @@ public:
         SERIAL_PRINTLN("%s (%d)", next_step->title, chan);
 
         // Special cases on exit current step
+        if (calstate.used_defaults
+          && CALIBRATE_OCTAVE == calstate.current_step->calibration_type
+          && calstate.current_step->index > 5) {
+          // always apply interpolation when leaving a high DAC point
+          InterpolateChannel(step_to_channel(calstate.current_step->step));
+        }
         switch (calstate.current_step->step) {
           case HELLO:
             if (calstate.encoder_value) {
@@ -85,11 +104,7 @@ public:
               calstate.used_defaults = true;
             }
             break;
-#ifdef VOR
-          case DAC_A_VOLT_6:
-#else
-          case DAC_A_VOLT_5:
-#endif
+          case DAC_A_VOLT_HIGH:
             if (calstate.used_defaults) {
               // copy DAC A to the rest of them, to make life easier
               for (int ch = 1; ch < DAC_CHANNEL_LAST; ++ch) {
@@ -132,11 +147,15 @@ public:
         break;
         #endif
 
-        case CALIBRATE_ADC_OFFSET:
-          calstate.encoder_value = OC::calibration_data.adc.offset[next_step->index];
-            #ifdef VOR
-            DAC::set_Vbias(DAC::VBiasUnipolar);
-            #endif
+        case CALIBRATE_ADC_OFFSET: // set ADC zero-point offset
+          if (calstate.used_defaults) // start fresh? auto-cal
+            calstate.encoder_value = OC::ADC::smoothed_raw_value(static_cast<ADC_CHANNEL>(next_step->index));
+          else
+            calstate.encoder_value = OC::calibration_data.adc.offset[next_step->index];
+
+          #ifdef VOR
+          DAC::set_Vbias(DAC::VBiasUnipolar);
+          #endif
           break;
         case CALIBRATE_DISPLAY:
           calstate.encoder_value = OC::calibration_data.display_offset;
@@ -168,6 +187,22 @@ public:
         }
         calstate.current_step = next_step;
       }
+  }
+
+  void InterpolateChannel(int ch) {
+    const int idxlow = 0;
+    const int idxhigh = current_octave;
+    uint32_t value = OC::calibration_data.dac.calibrated_octaves[ch][idxlow];
+    const uint16_t second = OC::calibration_data.dac.calibrated_octaves[ch][idxhigh];
+    int interval = (second - value) / (idxhigh - idxlow);
+
+    for (int i = idxlow+1; i < OCTAVES + 1; ++i) {
+      value += interval;
+      if (value > 0xFFFF) value = 0xFFFF;
+      OC::calibration_data.dac.calibrated_octaves[ch][i] = value;
+    }
+
+    calstate.auto_scale_set[ch] = true;
   }
 
   void Controller()
@@ -413,7 +448,7 @@ public:
         }
         if (event.control == OC::CONTROL_BUTTON_R && event.type == UI::EVENT_BUTTON_PRESS) FactoryReset();
 
-        // dual-press UP + DOWN to flip screen
+        // dual-press UP+DOWN / A+B to flip screen
         if ( event.type == UI::EVENT_BUTTON_DOWN &&
             (event.mask == (OC::CONTROL_BUTTON_A | OC::CONTROL_BUTTON_B)) ) {
           OC::calibration_data.toggle_flipmode();
@@ -428,10 +463,9 @@ public:
       if (event.type == UI::EVENT_BUTTON_DOWN) {
         // act-on-press for right encoder
         if (event.control == CONTROL_BUTTON_R) {
-          // Special case these values to read, before moving to next step
-          if (calstate.step < CALIBRATION_EXIT)
-            SwitchToStep( static_cast<CALIBRATION_STEP>(calstate.step + 1) );
-          else
+          if (calstate.step < CALIBRATION_EXIT) {
+            SwitchToStep(1); // step forward
+          } else
             calibration_complete = true;
 
           // ignore release and long-press during calibration
@@ -443,26 +477,14 @@ public:
           case CONTROL_BUTTON_L:
             if (calstate.step == HELLO) calibration_complete = 1; // Way out --jj
             if (calstate.step > CENTER_DISPLAY)
-              SwitchToStep( static_cast<CALIBRATION_STEP>(calstate.step - 1) );
+              SwitchToStep(-1); // step backward
             break;
           case CONTROL_BUTTON_R:
             break;
 
           case CONTROL_ENCODER_L:
             if (calstate.step > HELLO) {
-              if (calstate.current_step->calibration_type == CALIBRATE_OCTAVE && !calstate.used_defaults) {
-                // fine-tuning for CALIBRATE_DAC
-                int octave = current_octave + event.value;
-                if (octave < 0 || octave > min(OCTAVES, calstate.current_step->index + 7))
-                  SwitchToStep( static_cast<CALIBRATION_STEP>(calstate.step + event.value) );
-                else {
-                  current_octave = octave;
-                  calstate.encoder_value =
-                      OC::calibration_data.dac.calibrated_octaves[step_to_channel(calstate.step)][current_octave];
-                }
-              } else {
-                SwitchToStep( static_cast<CALIBRATION_STEP>(calstate.step + event.value) );
-              }
+              SwitchToStep(event.value);
             }
             break;
           case CONTROL_ENCODER_R:
@@ -475,7 +497,7 @@ public:
             if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {
               const CalibrationStep *step = calstate.current_step;
 
-              // long-press DOWN to measure ADC points
+              // long-press B/DOWN to measure ADC points
               switch (step->step) {
                 case ADC_PITCH_C2:
                   calstate.adc_1v = OC::ADC::value(ADC_CHANNEL_1);
@@ -486,20 +508,14 @@ public:
                 default: break;
               }
 
+              // long-press to set ADC zero-point offset
+              if (CALIBRATE_ADC_OFFSET == step->calibration_type) {
+                calstate.encoder_value = OC::ADC::smoothed_raw_value(static_cast<ADC_CHANNEL>(step->index));
+              }
+
               // long-press DOWN to auto-scale DAC values on current channel
               if (step->calibration_type == CALIBRATE_OCTAVE && current_octave > 0) {
-                int ch = step_to_channel(step->step);
-                uint32_t first = OC::calibration_data.dac.calibrated_octaves[ch][0];
-                uint16_t second = OC::calibration_data.dac.calibrated_octaves[ch][current_octave];
-                int interval = (second - first) / current_octave;
-
-                for (int i = 1; i < OCTAVES + 1; ++i) {
-                  first += interval;
-                  if (first > 0xFFFF) first = 0xFFFF;
-                  OC::calibration_data.dac.calibrated_octaves[ch][i] = first;
-                }
-
-                calstate.auto_scale_set[ch] = true;
+                InterpolateChannel(step_to_channel(step->step));
               }
               break;
             }
