@@ -1,4 +1,19 @@
+/*
+ * WAV file player applet
+ *
+ * It looks in the root directory of the SD card for the
+ * selected file, by number, in the format:
+ *   000.WAV
+ *   001.WAV
+ *   002.WAV
+ *   ...
+ *
+ * Sync mode will automatically lock tempo with the internal clock.
+ *
+ */
+
 #include "Audio/AudioPassthrough.h"
+#include "CVInputMap.h"
 #include "HemisphereAudioApplet.h"
 #include "OC_gpio.h"
 #include <TeensyVariablePlayback.h>
@@ -59,6 +74,13 @@ public:
       sync_trig = true;
     }
 
+    if (playstop_cv.Clock()) {
+      if (FileIsPlaying())
+        retrig = true;
+      else
+        StartPlaying();
+    }
+
     titlestat[7] = FileIsPlaying() ? '*' : ' ';
     titlestat[8] = (filter_on) ? '/' : ' ';
 
@@ -73,7 +95,7 @@ public:
           wavplayer_reload = false;
         }
 
-        if (wavplayer_playtrig && go_time) {
+        if (wavplayer_playtrig && (go_time || !tempo_sync)) {
           wavplayer.play();
           loop_count = 0;
           wavplayer_playtrig = false;
@@ -110,25 +132,15 @@ public:
     gfxPrintfn(1, y, 0, "%03u", GetFileNum());
     gfxEndCursor(cursor == FILE_NUM);
 
-    gfxIcon(25, y, FileIsPlaying() ? PLAY_ICON : STOP_ICON);
-    if (cursor == PLAYSTOP_BUTTON)
-      gfxFrame(24, y-1, 10, 10);
+    gfxIcon(22, y, FileIsPlaying() ? PLAY_ICON : STOP_ICON);
+    gfxStartCursor(30, y-1);
+    gfxPrint(playstop_cv);
+    gfxEndCursor(cursor == PLAYSTOP_GATE_CV, false, playstop_cv.InputName());
 
-    if (cursor == FILTER_PARAM) {
-      if (EditMode()) {
-        if (djfilter > 0) gfxPrint(36, y, "HPF");
-        else if (djfilter < 0) gfxPrint(36, y, "LPF");
-        else gfxPrint(40, y, "X");
-      } else {
-        gfxIcon(35, y, RIGHT_ICON);
-        gfxIcon(42, y, (filter_on) ? SLEW_ICON : PhzIcons::tuner);
-      }
-    } else {
-      if (wavplayer_ready)
-        gfxPrint(34, y, GetFileBPM());
-      else
-        gfxPrint(34, y, "(--)");
-    }
+    if (wavplayer_ready)
+      gfxPrint(37, y, GetFileBPM());
+    else
+      gfxPrint(37, y, "(--)");
 
     // filter mod
     gfxStartCursor(56, y);
@@ -143,7 +155,16 @@ public:
     }
 
     y += 10;
-    if (FileIsPlaying()) {
+    if (cursor == FILTER_PARAM) {
+      if (EditMode()) {
+        if (djfilter > 0) gfxPrint(36, y, "HPF");
+        else if (djfilter < 0) gfxPrint(36, y, "LPF");
+        else gfxPrint(40, y, "X");
+      } else {
+        gfxIcon(49, y, RIGHT_ICON);
+        gfxIcon(56, y, (filter_on) ? SLEW_ICON : PhzIcons::tuner);
+      }
+    } else if (FileIsPlaying()) {
       uint32_t tmilli = GetFileTime();
       uint32_t tsec = tmilli / 1000;
       uint32_t tmin = tsec / 60;
@@ -200,14 +221,13 @@ public:
   void OnButtonPress() {
     if (CheckEditInputMapPress(
           cursor,
+          IndexedInput(PLAYSTOP_GATE_CV, playstop_cv),
           IndexedInput(FILTER_CV, djfilter_cv),
           IndexedInput(LEVEL_CV, level_cv),
           IndexedInput(PLAYRATE_CV, playrate_cv)
     )) return;
 
-    if (PLAYSTOP_BUTTON == cursor)
-      ToggleFilePlayer();
-    else if (LOOP_ENABLE == cursor) {
+    if (LOOP_ENABLE == cursor) {
       syncloopstart = true;
       go_time = false;
     } else
@@ -223,9 +243,8 @@ public:
       case FILE_NUM:
         ChangeToFile(GetFileNum() + direction);
         break;
-      case PLAYSTOP_BUTTON:
-        // shouldn't happen
-        CursorToggle();
+      case PLAYSTOP_GATE_CV:
+        playstop_cv.ChangeSource(direction);
         break;
       case FILTER_PARAM:
         filter_on = true;
@@ -279,7 +298,7 @@ protected:
 private:
   enum WAVCursor {
     FILE_NUM,
-    PLAYSTOP_BUTTON,
+    PLAYSTOP_GATE_CV,
     FILTER_PARAM,
     FILTER_CV,
     LEVEL,
@@ -304,6 +323,7 @@ private:
   bool filter_on = false;
   bool tempo_sync = true;
 
+  DigitalInputMap playstop_cv;
   CVInputMap level_cv;
   int16_t playrate = 100; // TODO: we need 9 bits for +/-200%
   CVInputMap playrate_cv;
