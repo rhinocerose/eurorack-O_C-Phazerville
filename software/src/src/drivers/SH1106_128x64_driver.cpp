@@ -28,6 +28,7 @@
 #include "../../OC_gpio.h"
 #include "../../OC_options.h"
 #include "../../util/util_debugpins.h"
+#include "../../util/util_misc.h"
 #if defined(__IMXRT1062__)
 #include <SPI.h>
 #endif
@@ -203,7 +204,9 @@ void SH1106_128x64_Driver::Flush() {
 #endif // __MK20DX256__
 #elif defined(__IMXRT1062__)
   // The same scenario as above can occur with the ISR-driven transfer
-  while (sendpage_state) { }
+  if (sendpage_state) { 
+    SERIAL_PRINTLN("display wait / frame drop");
+  }
 #endif
 }
 
@@ -232,7 +235,7 @@ void SH1106_128x64_Driver::Clear() {
 
 #if defined(__MK20DX256__)
 /*static*/
-void SH1106_128x64_Driver::SendPage(uint_fast8_t index, const uint8_t *data) {
+bool SH1106_128x64_Driver::SendPage(uint_fast8_t index, const uint8_t *data) {
   SH1106_data_start_seq[2] = 0xb0 | index;
 
   digitalWriteFast(OLED_DC, LOW); // U8G_ESC_ADR(0),           /* instruction mode */
@@ -252,11 +255,14 @@ void SH1106_128x64_Driver::SendPage(uint_fast8_t index, const uint8_t *data) {
   SPI_send(data, kPageSize);
   digitalWriteFast(OLED_CS, OLED_CS_INACTIVE); // U8G_ESC_CS(0)
 #endif
+  return true;
 }
 
 #elif defined(__IMXRT1062__)
 /*static*/
-void SH1106_128x64_Driver::SendPage(uint_fast8_t index, const uint8_t *data) {
+bool SH1106_128x64_Driver::SendPage(uint_fast8_t index, const uint8_t *data) {
+  if (sendpage_state) return false; // don't interrupt others
+                                    //
   SH1106_data_start_seq[2] = 0xb0 | index;
   sendpage_state = 1;
   sendpage_src = (const uint32_t *)data; // frame buffer is 32 bit aligned
@@ -272,6 +278,8 @@ void SH1106_128x64_Driver::SendPage(uint_fast8_t index, const uint8_t *data) {
   #if defined(ARDUINO_TEENSY41)
   }
   #endif
+
+  return true;
 }
 
 static void spi_sendpage_isr() {

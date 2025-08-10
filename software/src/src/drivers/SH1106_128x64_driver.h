@@ -35,7 +35,7 @@ struct SH1106_128x64_Driver {
   static void Init();
   static void Clear();
   static void Flush();
-  static void SendPage(uint_fast8_t index, const uint8_t *data);
+  static bool SendPage(uint_fast8_t index, const uint8_t *data);
   static void SPI_send(void *bufr, size_t n);
 
   // SH1106 ram is 132x64, so it needs an offset to center data in display.
