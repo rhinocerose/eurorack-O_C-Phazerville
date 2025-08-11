@@ -148,10 +148,10 @@ public:
         uint64_t data = 0;
         // Input Mappings
         for (size_t i = 0; i < ADC_CHANNEL_LAST/4; ++i) {
-          data = PackPackables(HS::trigmap[i], HS::trigmap[i+1], HS::trigmap[i+2], HS::trigmap[i+3]);
+          data = PackPackables(HS::trigmap[i*4], HS::trigmap[i*4+1], HS::trigmap[i*4+2], HS::trigmap[i*4+3]);
           PhzConfig::setValue(preset_key | (TRIGMAP_KEY + i), data);
 
-          data = PackPackables(HS::cvmap[i], HS::cvmap[i+1], HS::cvmap[i+2], HS::cvmap[i+3]);
+          data = PackPackables(HS::cvmap[i*4], HS::cvmap[i*4+1], HS::cvmap[i*4+2], HS::cvmap[i*4+3]);
           PhzConfig::setValue(preset_key | (CVMAP_KEY + i), data);
         }
 
@@ -269,7 +269,7 @@ public:
           }
         } else {
           for (size_t i = 0; i < ADC_CHANNEL_LAST/4; ++i) {
-            UnpackPackables(data, HS::trigmap[i], HS::trigmap[i+1], HS::trigmap[i+2], HS::trigmap[i+3]);
+            UnpackPackables(data, HS::trigmap[i*4], HS::trigmap[i*4+1], HS::trigmap[i*4+2], HS::trigmap[i*4+3]);
             PhzConfig::getValue(preset_key | (TRIGMAP_KEY + i+1), data);
           }
         }
@@ -283,7 +283,7 @@ public:
           }
         } else {
           for (size_t i = 0; i < ADC_CHANNEL_LAST/4; ++i) {
-            UnpackPackables(data, HS::cvmap[i], HS::cvmap[i+1], HS::cvmap[i+2], HS::cvmap[i+3]);
+            UnpackPackables(data, HS::cvmap[i*4], HS::cvmap[i*4+1], HS::cvmap[i*4+2], HS::cvmap[i*4+3]);
             PhzConfig::getValue(preset_key | (CVMAP_KEY + i+1), data);
           }
         }
