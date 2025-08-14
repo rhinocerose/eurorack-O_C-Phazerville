@@ -24,6 +24,7 @@ namespace PhzConfig {
 
   void setValue(KEY key, VALUE value);
   bool getValue(KEY key, VALUE &value);
+  void deleteKey(KEY key);
 
   void printDirectory(FS &fs = myfs);
   void printDirectory(File dir, int numSpaces);

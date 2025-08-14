@@ -45,10 +45,7 @@
 
 // per bank file
 static constexpr int QUAD_PRESET_COUNT = 32;
-
-////////////////////////////////////////////////////////////////////////////////
-//// Hemisphere Manager
-////////////////////////////////////////////////////////////////////////////////
+static constexpr int PRESET_FILE_REVISION = 0;
 
 using namespace HS;
 
@@ -98,15 +95,34 @@ public:
 
       if (!success) // fallback load from LFS
         PhzConfig::load_config(bank_filename);
+
+      // Version flag - for future reconfigurations...
+      //  - This can be used to migrate old data after breaking changes to the schema
+      //  - Right now, its existence indicates v1.10.1+
+      uint64_t data = 0;
+      bool version_key_present = PhzConfig::getValue(VERSION_KEY, data);
+      //int preset_file_revision = version_key_present? data : 0;
+
+      // Data migration to protect against a bug in v1.10
+      // This can be removed later, when we're sure no one is still using broken preset files...
+      if (!version_key_present) {
+        for (size_t i = 0; i < QUAD_PRESET_COUNT; ++i) {
+          PhzConfig::deleteKey((i << 11) | (CVMAP_KEY + 1));
+          PhzConfig::deleteKey((i << 11) | (TRIGMAP_KEY + 1));
+        }
+      }
+
+      // update version key after all data migrations
+      PhzConfig::setValue(VERSION_KEY, PRESET_FILE_REVISION);
     }
 
-    // lower 8 bits of PhzConfig KEY
+    // lower 11 bits of PhzConfig KEY
     enum PresetDataKeys : uint16_t {
         APPLET_METADATA_KEY = 0, // applet ids
         CLOCK_DATA_KEY = 1,
         GLOBALS_KEY = 2,
-        OLD_TRIGMAP_KEY = 3,
-        OLD_CVMAP_KEY = 4,
+        OLD_TRIGMAP_KEY = 3, // from v1.9
+        OLD_CVMAP_KEY = 4, // from v1.9
         OUTSKIP_KEY = 5,
 
         APPLET_L1_DATA_KEY = 10,
@@ -131,6 +147,8 @@ public:
 
         // 300-500 = Sequences (aka Patterns)
         SEQUENCES_KEY   = 300, // + blob index
+
+        VERSION_KEY = 0xFFFF
     };
 
     void StoreToPreset(int id) {
@@ -270,7 +288,7 @@ public:
         } else {
           for (size_t i = 0; i < ADC_CHANNEL_LAST/4; ++i) {
             UnpackPackables(data, HS::trigmap[i*4], HS::trigmap[i*4+1], HS::trigmap[i*4+2], HS::trigmap[i*4+3]);
-            PhzConfig::getValue(preset_key | (TRIGMAP_KEY + i+1), data);
+            if (!PhzConfig::getValue(preset_key | (TRIGMAP_KEY + i+1), data)) break;
           }
         }
 
@@ -284,7 +302,7 @@ public:
         } else {
           for (size_t i = 0; i < ADC_CHANNEL_LAST/4; ++i) {
             UnpackPackables(data, HS::cvmap[i*4], HS::cvmap[i*4+1], HS::cvmap[i*4+2], HS::cvmap[i*4+3]);
-            PhzConfig::getValue(preset_key | (CVMAP_KEY + i+1), data);
+            if (!PhzConfig::getValue(preset_key | (CVMAP_KEY + i+1), data)) break;
           }
         }
 

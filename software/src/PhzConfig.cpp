@@ -63,6 +63,10 @@ bool getValue(KEY key, VALUE &value)
   return false;
 }
 
+void deleteKey(KEY key) {
+  cfg_store.erase(key);
+}
+
 bool save_config(const char* filename, FS &fs)
 {
     SERIAL_PRINTLN("\nSaving Config: %s\n", filename);
