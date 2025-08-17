@@ -162,7 +162,7 @@ namespace HS {
         RotateMask(qview, dir);
       } else { // edit mask bits
         const int idx = q_edit - 4;
-        q_engine[qview].EditMask(idx, dir>1);
+        q_engine[qview].EditMask(idx, dir>0);
       }
     }
   }
