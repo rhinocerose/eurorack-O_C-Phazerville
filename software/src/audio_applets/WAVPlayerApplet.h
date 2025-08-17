@@ -271,17 +271,18 @@ public:
     }
   }
 
-  uint64_t OnDataRequest() {
+  void OnDataRequest(std::array<uint64_t, CONFIG_SIZE>& data) override {
     // STOP playback to avoid SD card hangup on preset save
     wavplayer.stop();
-    // TODO: djfilter_cv (16bits)
-    return PackPackables(level, level_cv, uint8_t(playrate), playrate_cv, wavplayer_select, djfilter);
+    data[0] = PackPackables(level, level_cv, int8_t(playrate), playrate_cv, wavplayer_select, djfilter);
+    data[1] = PackPackables(playrate, djfilter_cv, playstop_cv, loop_length);
   }
-  void OnDataReceive(uint64_t data) {
-    // TODO: djfilter_cv (16bits)
-    int8_t rate;
-    UnpackPackables(data, level, level_cv, rate, playrate_cv, wavplayer_select, djfilter);
-    playrate = rate;
+  void OnDataReceive(const std::array<uint64_t, CONFIG_SIZE>& data) override {
+    int8_t old_playrate;
+    UnpackPackables(data[0], level, level_cv, old_playrate, playrate_cv, wavplayer_select, djfilter);
+    UnpackPackables(data[1], playrate, djfilter_cv, playstop_cv, loop_length);
+    if (playrate == 0) playrate = old_playrate;
+    if (loop_length == 0) loop_length = 8;
     ChangeToFile(wavplayer_select);
   }
 
