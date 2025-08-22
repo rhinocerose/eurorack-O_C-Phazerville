@@ -97,7 +97,7 @@ struct MIDIMapping : public MIDIMapSettings {
     output = HEMISPHERE_MAX_CV;
   }
   void ProcessClock(int count) {
-    if (IsClock() && (count % clock_mod() == 1))
+    if (IsClock() && ((count % clock_mod() == 1) || ((function == HEM_MIDI_CLOCK_24_OUT) && (clock_mod() == 1))))
       ClockOut();
   }
   const bool InRange(uint8_t note) const {
@@ -150,8 +150,8 @@ struct MIDIFrame {
     uint8_t max_voice = 1;
     int poly_mode = 0;
     int8_t poly_rotate_index = -1;
-    uint16_t midi_channel_filter = 0; // each bit state represents a channel. 1 means enabled. all 0's means Omni (no channel filter)
-    bool any_channel_omni = false;
+    uint16_t midi_channel_filter = 1; // each bit state represents a channel. 1 means enabled. all 0's means Omni (no channel filter)
+    bool any_channel_omni = (midi_channel_filter < 1);
 
     // Clock/Start/Stop are handled by ClockSetup applet
     bool clock_run = 0;
@@ -211,7 +211,7 @@ struct MIDIFrame {
         uint16_t filter = 0;
         bool omni = false;
         for (auto &map : mapping) {
-            if (!map.function) continue;
+            // if (!map.function) continue;
             if (map.channel < 16) filter |= (1 << map.channel);
             else omni = true;
         }
