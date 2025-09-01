@@ -74,6 +74,7 @@ public:
             frame.MIDIState.clock_q = 0;
             clock_sync = 1;
             midi_sync = 1;
+            HS::clock_m.DisableMIDIOut();
         }
         if (frame.MIDIState.start_q) {
             frame.MIDIState.start_q = 0;

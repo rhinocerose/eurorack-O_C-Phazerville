@@ -177,6 +177,7 @@ public:
     // call this on every tick when clock is running, before all Controllers
     void SyncTrig(bool clocked, bool midi_sync = false) {
         const uint32_t now = OC::CORE::ticks;
+        if (midi_sync) DisableMIDIOut();
         const int ppqn = (midi_sync || !midi_out_enabled) ? MIDI_CLOCK_PPQN : clock_ppqn;
 
         // Reset only when all multipliers have been met
@@ -296,6 +297,7 @@ public:
 #endif
 #endif
         }
+        EnableMIDIOut();
     }
 
     void Pause() {paused = 1;}
