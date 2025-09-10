@@ -180,6 +180,9 @@ public:
         if (midi_sync) DisableMIDIOut();
         const int ppqn = (midi_sync || !midi_out_enabled) ? MIDI_CLOCK_PPQN : clock_ppqn;
 
+        // don't sync to non-MIDI triggers if MIDI sync is active
+        if (!midi_sync && !midi_out_enabled) clocked = false;
+
         // Reset only when all multipliers have been met
         bool reset = 1;
         // Process beat sync actions when any multiplier is met
