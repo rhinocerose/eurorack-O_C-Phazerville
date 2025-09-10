@@ -226,19 +226,18 @@ void DAC::set_scaling(uint8_t scaling, uint8_t channel_id) {
 }
 /*static*/
 void DAC::restore_scaling(uint32_t scaling) {
-  
   // restore scaling from global settings
   for (int i = 0; i < DAC_CHANNEL_COUNT; i++) {
-    uint8_t _scaling = (scaling >> (i * 8)) & 0xFF;
+    uint8_t _scaling = (scaling >> (i * 32/DAC_CHANNEL_COUNT)) & 0x0F;
     set_scaling(_scaling, i);
   }
 }
 uint32_t DAC::store_scaling() {
 
   uint32_t _scaling = 0;
-  // merge values into uint32_t : 
+  // merge values into uint32_t :
   for (int i = 0; i < DAC_CHANNEL_COUNT; i++)
-    _scaling |= (DAC_scaling[i] << (i * 8)); 
+    _scaling |= (DAC_scaling[i] << (i * 32/DAC_CHANNEL_COUNT));
   return _scaling;
 }
 

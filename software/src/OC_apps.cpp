@@ -265,6 +265,7 @@ void save_global_settings() {
 
   // Metadata
   uint64_t data = 0;
+  global_settings.DAC_scaling = OC::DAC::store_scaling();
   Pack(data, PackLocation{0, 16}, global_settings.current_app_id);
   Pack(data, PackLocation{16, 1}, global_settings.encoders_enable_acceleration);
   // 15 bits empty...
@@ -548,6 +549,7 @@ void Init(bool reset_settings) {
       global_settings.encoders_enable_acceleration = Unpack(data, PackLocation{16, 1});
       // 15 bits empty...
       global_settings.DAC_scaling = Unpack(data, PackLocation{32, 32});
+      OC::DAC::restore_scaling(global_settings.DAC_scaling);
 
       // User Scales
       for (size_t i = 0; i < Scales::SCALE_USER_COUNT; ++i) {
