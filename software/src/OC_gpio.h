@@ -22,6 +22,12 @@ extern bool I2S2_Audio_DAC;
 extern bool I2C_Expansion;
 extern bool MIDI_Uses_Serial8;
 extern bool SDcard_Ready;
+#ifdef ARDUINO_TEENSY41
+extern bool DAC_20Vpp;
+#else
+static constexpr bool DAC_20Vpp = false;
+#endif
+
 #ifdef NORTHERNLIGHT
 static constexpr bool NorthernLightModular = true;
 #elif !defined(ARDUINO_TEENSY41)
