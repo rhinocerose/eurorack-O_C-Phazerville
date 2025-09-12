@@ -93,6 +93,7 @@ void inline pinMode(uint8_t pin, uint8_t mode) {
 
 void Pinout_Detect();
 void SetFlipMode(bool flip_180);
+float GetIDVoltage();
 
 }
 
