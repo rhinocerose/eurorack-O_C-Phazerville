@@ -14,12 +14,52 @@ class HandSawApplet : public HemisphereAudioApplet {
             return "HandSaw";
         }
         void Start() override {
-            
+          synth1_to_mixer1.connect(synth1, 0, mixer1, 0);
+          synth2_to_mixer1.connect(synth2, 0, mixer1, 1);
+          synth3_to_mixer1.connect(synth3, 0, mixer1, 2);
+          synth4_to_mixer2.connect(synth4, 0, mixer2, 0);
+          synth5_to_mixer2.connect(synth5, 0, mixer2, 1);
+          synth6_to_mixe2.connect(synth6, 0, mixer2, 2);
+          synth7_to_mixer3.connect(synth7, 0, mixer3, 0);
+          synth8_to_mixer3.connect(synth8, 0, mixer3, 1);
+          synth9_to_mixer3.connect(synth9, 0, mixer3, 2);
+          synth10_to_mixer4.connect(synth10, 0, mixer4, 0);
+          synth11_to_mixer4.connect(synth11, 0, mixer4, 1);
+          synth12_to_mixer4.connect(synth12, 0, mixer4, 2);
+
+          mixer1_to_stackMixer.connect(mixer1, 0, stackMixer, 0);
+          mixer2_to_stackMixer.connect(mixer2, 0, stackMixer, 1);
+          mixer3_to_stackMixer.connect(mixer3, 0, stackMixer, 2);
+          mixer4_to_stackMixer.connect(mixer4, 0, stackMixer, 3);
+
+          input_to_outputMixer.connect(input_stream, 0, outputMixer, 0);
+          stackMixer_to_outputMixer.connect(stackMixer, 0, outputMixer, 1);
+          outputMixer.gain(0, 1.0f); // passthru
         }
         void Unload() override {
-            AllowRestart();
+          synth1_to_mixer1.disconnect();
+          synth2_to_mixer1.disconnect();
+          synth3_to_mixer1.disconnect();
+          synth4_to_mixer2.disconnect();
+          synth5_to_mixer2.disconnect();
+          synth6_to_mixe2.disconnect();
+          synth7_to_mixer3.disconnect();
+          synth8_to_mixer3.disconnect();
+          synth9_to_mixer3.disconnect();
+          synth10_to_mixer4.disconnect();
+          synth11_to_mixer4.disconnect();
+          synth12_to_mixer4.disconnect();
+
+          mixer1_to_stackMixer.disconnect();
+          mixer2_to_stackMixer.disconnect();
+          mixer3_to_stackMixer.disconnect();
+          mixer4_to_stackMixer.disconnect();
+
+          input_to_outputMixer.disconnect();
+          stackMixer_to_outputMixer.disconnect();
+          AllowRestart();
         }
-        
+
         void Controller() override {
             float detuneValue = detune + (detune_cv.In() * 0.01f);
             float phaseValue = phase + (phase_cv.In() * 0.01f);
@@ -87,8 +127,6 @@ class HandSawApplet : public HemisphereAudioApplet {
             mixer3.gain(2, 0.33f);
             mixer4.gain(2, 0.33f);
 
-            mixer1.gain(3, 0.0f);
-            
             stackMixer.gain(0, 0.25f);
             stackMixer.gain(1, 0.25f);
             stackMixer.gain(2, 0.25f);
@@ -98,7 +136,7 @@ class HandSawApplet : public HemisphereAudioApplet {
                 = constrain(static_cast<float>(mix) * 0.01f + mix_cv.InF(), 0.0f, 1.0f);
 
             outputMixer.gain(1, m);
-            outputMixer.gain(0, 1.0f - m);
+            //outputMixer.gain(0, 1.0f - m);
         }
 
         void View() override {
@@ -154,7 +192,7 @@ class HandSawApplet : public HemisphereAudioApplet {
             gfxPrint(phase_cv);
             gfxEndCursor(cursor == PHASE_CV, false, phase_cv.InputName());
 
-            gfxPrint(1, 55, "Mix: ");
+            gfxPrint(1, 55, "Lvl: ");
             gfxStartCursor();
             graphics.printf("%3d%%", mix);
             gfxEndCursor(cursor == MIX);
@@ -327,10 +365,10 @@ class HandSawApplet : public HemisphereAudioApplet {
         CVInputMap mix_cv;
 
         AudioPassthrough<MONO> input_stream;
-        AudioMixer<4> mixer1;
-        AudioMixer<4> mixer2;
-        AudioMixer<4> mixer3;
-        AudioMixer<4> mixer4;
+        AudioMixer<3> mixer1;
+        AudioMixer<3> mixer2;
+        AudioMixer<3> mixer3;
+        AudioMixer<3> mixer4;
         AudioMixer<4> stackMixer;
         AudioMixer<2> outputMixer;
         
@@ -347,25 +385,24 @@ class HandSawApplet : public HemisphereAudioApplet {
         AudioSynthWaveform synth11;
         AudioSynthWaveform synth12;
 
-        AudioConnection synth1_to_mixer1{synth1, 0, mixer1, 0};
-        AudioConnection synth2_to_mixer1{synth2, 0, mixer1, 1};
-        AudioConnection synth3_to_mixer1{synth3, 0, mixer1, 2};
-        AudioConnection in_to_mixer1{input_stream, 0, mixer1, 3};
-        AudioConnection synth4_to_mixer2{synth4, 0, mixer2, 0};
-        AudioConnection synth5_to_mixer2{synth5, 0, mixer2, 1};
-        AudioConnection synth6_to_mixe2{synth6, 0, mixer2, 2};
-        AudioConnection synth7_to_mixer3{synth7, 0, mixer3, 0};
-        AudioConnection synth8_to_mixer3{synth8, 0, mixer3, 1};
-        AudioConnection synth9_to_mixer3{synth9, 0, mixer3, 2};
-        AudioConnection synth10_to_mixer4{synth10, 0, mixer4, 0};
-        AudioConnection synth11_to_mixer4{synth11, 0, mixer4, 1};
-        AudioConnection synth12_to_mixer4{synth12, 0, mixer4, 2};
+        AudioConnection synth1_to_mixer1;
+        AudioConnection synth2_to_mixer1;
+        AudioConnection synth3_to_mixer1;
+        AudioConnection synth4_to_mixer2;
+        AudioConnection synth5_to_mixer2;
+        AudioConnection synth6_to_mixe2;
+        AudioConnection synth7_to_mixer3;
+        AudioConnection synth8_to_mixer3;
+        AudioConnection synth9_to_mixer3;
+        AudioConnection synth10_to_mixer4;
+        AudioConnection synth11_to_mixer4;
+        AudioConnection synth12_to_mixer4;
 
-        AudioConnection mixer1_to_stackMixer{mixer1, 0, stackMixer, 0};
-        AudioConnection mixer2_to_stackMixer{mixer2, 0, stackMixer, 1};
-        AudioConnection mixer3_to_stackMixer{mixer3, 0, stackMixer, 2};
-        AudioConnection mixer4_to_stackMixer{mixer4, 0, stackMixer, 3};
+        AudioConnection mixer1_to_stackMixer;
+        AudioConnection mixer2_to_stackMixer;
+        AudioConnection mixer3_to_stackMixer;
+        AudioConnection mixer4_to_stackMixer;
         
-        AudioConnection input_to_outputMixer{input_stream, 0, outputMixer, 0};
-        AudioConnection stackMixer_to_outputMixer{stackMixer, 0, outputMixer, 1};
+        AudioConnection input_to_outputMixer;
+        AudioConnection stackMixer_to_outputMixer;
 };
