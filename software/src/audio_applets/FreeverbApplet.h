@@ -14,16 +14,29 @@ class ReverbApplet : public HemisphereAudioApplet {
             return "Reverb";
         }
         void Start() override {
+            if (!reverb) {
+              reverb = new AudioEffectFreeverb();
+            }
+            input_to_reverb.connect(input, 0, *reverb, 0);
+            reverb_to_dry_wet.connect(*reverb, 0, filter, 0);
+            filter_to_dry_wet.connect(filter, 0, dry_wet_mixer, 0);
+            input_to_dry_wet.connect(input, 0, dry_wet_mixer, 1);
             filter.frequency(15000);
         }
 
         void Unload() override {
+            input_to_reverb.disconnect();
+            reverb_to_dry_wet.disconnect();
+            filter_to_dry_wet.disconnect();
+            input_to_dry_wet.disconnect();
             AllowRestart();
         }
 
         void Controller() override {
-            reverb.roomsize((size * 0.01f) + size_cv.InF() * 0.01f);
-            reverb.damping((damp * 0.01f) + damp_cv.InF() * 0.01f);
+          if (reverb) {
+            reverb->roomsize((size * 0.01f) + size_cv.InF() * 0.01f);
+            reverb->damping((damp * 0.01f) + damp_cv.InF() * 0.01f);
+          }
 
             filter.frequency(cutoff);
 
@@ -158,15 +171,15 @@ class ReverbApplet : public HemisphereAudioApplet {
         int8_t cursor = SIZE;
         AudioPassthrough<MONO> input;
         
-        AudioEffectFreeverb reverb;
+        AudioEffectFreeverb* reverb;
         AudioFilterStateVariable filter;
         
         AudioMixer<2> dry_wet_mixer;
 
-        AudioConnection input_to_reverb{input, 0, reverb, 0};
-        AudioConnection reverb_to_dry_wet{reverb, 0, filter, 0};
-        AudioConnection filter_to_dry_wet{filter, 0, dry_wet_mixer, 0};
-        AudioConnection input_to_dry_wet{input, 0, dry_wet_mixer, 1};
+        AudioConnection input_to_reverb;
+        AudioConnection reverb_to_dry_wet;
+        AudioConnection filter_to_dry_wet;
+        AudioConnection input_to_dry_wet;
 
         int8_t mix = 100;
         int8_t size = 50;
