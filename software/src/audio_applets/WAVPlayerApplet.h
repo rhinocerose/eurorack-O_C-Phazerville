@@ -30,10 +30,19 @@ public:
 
   void Start() {
     for (int i = 0; i < Channels; i++) {
-      in_conns[i].connect(input, i, mixer[i], 3);
+      PatchCable(input, i, mixer[i], 3);
       mixer[i].gain(3, 1.0);
-      out_conns[i].connect(mixer[i], 0, output, i);
+      PatchCable(mixer[i], 0, output, i);
     }
+
+    PatchCable(wavplayer, 0, hpfilter[0], 0);
+    PatchCable(wavplayer, 1, hpfilter[1], 0);
+    PatchCable(wavplayer, 0, mixer[0], 0);
+    PatchCable(wavplayer, 1, mixer[1], 0);
+    PatchCable(hpfilter[0], 2, mixer[0], 1);
+    PatchCable(hpfilter[1], 2, mixer[1], 1);
+    PatchCable(hpfilter[0], 0, mixer[0], 2);
+    PatchCable(hpfilter[1], 0, mixer[1], 2);
 
     hpfilter[0].resonance(1.0);
     hpfilter[1].resonance(1.0);
@@ -50,6 +59,7 @@ public:
   }
   void Unload() {
     wavplayer.stop();
+    AllowRestart();
   }
 
   void Controller() {
@@ -340,18 +350,6 @@ private:
   AudioFilterStateVariable hpfilter[2];
   AudioMixer4           mixer[2];
   AudioPassthrough<Channels> output;
-
-  std::array<AudioConnection, Channels> in_conns;
-  std::array<AudioConnection, Channels> out_conns;
-
-  AudioConnection          patchCordWav1L{wavplayer, 0, hpfilter[0], 0};
-  AudioConnection          patchCordWav1R{wavplayer, 1, hpfilter[1], 0};
-  AudioConnection          patchCordWav1Ldry{wavplayer, 0, mixer[0], 0};
-  AudioConnection          patchCordWav1Rdry{wavplayer, 1, mixer[1], 0};
-  AudioConnection          patchCordWavHPF1L{hpfilter[0], 2, mixer[0], 1};
-  AudioConnection          patchCordWavHPF1R{hpfilter[1], 2, mixer[1], 1};
-  AudioConnection          patchCordWavLPF2L{hpfilter[0], 0, mixer[0], 2};
-  AudioConnection          patchCordWavLPF2R{hpfilter[1], 0, mixer[1], 2};
 
   // SD player vars, copied from other dev branch
   bool wavplayer_reload = true;
