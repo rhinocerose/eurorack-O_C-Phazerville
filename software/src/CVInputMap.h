@@ -23,7 +23,7 @@ struct CVInputMap {
     return source <= ADC_CHANNEL_LAST
       ? frame.inputs[source - 1]
       : (source - ADC_CHANNEL_LAST <= DAC_CHANNEL_LAST)
-        ? frame.outputs[source - 1 - ADC_CHANNEL_LAST]
+        ? frame.ViewOut(source - 1 - ADC_CHANNEL_LAST)
         : frame.MIDIState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - 1].output;
   }
 
@@ -123,7 +123,7 @@ struct DigitalInputMap {
         // gate_high is already calculated for ADC
         //return frame.inputs[cv_input_index()] > GATE_THRESHOLD;
       case CV_OUTPUT:
-        return frame.outputs[cv_output_index()] > GATE_THRESHOLD;
+        return frame.ViewOut(cv_output_index()) > GATE_THRESHOLD;
       case MIDI_MAP:
         return frame.MIDIState.mapping[midi_map_index()].output > GATE_THRESHOLD;
       case NONE:

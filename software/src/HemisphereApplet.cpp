@@ -19,7 +19,7 @@ void HemisphereApplet::BaseStart(const HEM_SIDE hemisphere_) {
         applet_started = true;
         Start();
         ForEachChannel(ch) {
-            Out(ch, 0); // reset outputs
+            Out(ch, 0, true); // reset outputs
         }
     }
 }
@@ -104,7 +104,7 @@ void HS::IOFrame::Load() {
     // Handle clock pulse timing
     for (int i = 0; i < DAC_CHANNEL_COUNT; ++i) {
         if (clock_countdown[i] > 0) {
-            if (--clock_countdown[i] == 0) outputs[i] = 0;
+            if (--clock_countdown[i] == 0) Out(i, 0);
         }
     }
     for (int i = 0; i < MIDIMAP_MAX; ++i) {

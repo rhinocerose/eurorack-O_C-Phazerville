@@ -123,6 +123,7 @@ public:
         OLD_TRIGMAP_KEY = 3, // from v1.9
         OLD_CVMAP_KEY = 4, // from v1.9
         OUTSKIP_KEY = 5,
+        OUTSLEW_KEY = 6,
 
         APPLET_L1_DATA_KEY = 10,
         APPLET_R1_DATA_KEY = 11,
@@ -177,6 +178,11 @@ public:
           Pack(data, PackLocation{i*8, 8}, HS::frame.clockskip[i]);
         }
         PhzConfig::setValue(preset_key | OUTSKIP_KEY, data);
+        data = 0;
+        for (size_t i = 0; i < 8; ++i) {
+          Pack(data, PackLocation{i*8, 8}, HS::frame.output_slew[i]);
+        }
+        PhzConfig::setValue(preset_key | OUTSLEW_KEY, data);
 
         data = 0;
         for (size_t h = 0; h < APPLET_SLOTS; h++)
@@ -309,6 +315,12 @@ public:
         for (size_t i = 0; i < 8; ++i)
         {
           HS::frame.clockskip[i] = Unpack(data, PackLocation{i*8, 8});
+        }
+
+        PhzConfig::getValue(preset_key | OUTSLEW_KEY, data);
+        for (size_t i = 0; i < 8; ++i)
+        {
+          HS::frame.output_slew[i] = Unpack(data, PackLocation{i*8, 8});
         }
 
         // applet filtering is actually just global
@@ -456,10 +468,18 @@ public:
         if (select_mode != zoom_slot && CursorBlink())
           gfxIcon(64 - 8*(zoom_slot & 1), 1, (zoom_slot & 1)? RIGHT_ICON : LEFT_ICON, true);
       } else if (isEditing) {
-        const int x = ((zoom_cursor-1)%2)*64;
+        const int x = 64*((zoom_cursor-1)%2);
         const int y = 13 + 10*((zoom_cursor-1)/2);
         gfxInvert(x, y, 19, 9);
         gfxFrame(x, y, 19, 9, true);
+        if (zoom_cursor >= 5) {
+          gfxIcon(x + 18, y + 1, DOWN_ICON, true);
+
+          graphics.clearRect(0, y + 10, 127, 20);
+          gfxPrint(x, y+10, "Slew=");
+          gfxPrint(HS::frame.output_slew[zoom_slot*2 + zoom_cursor-5]);
+          gfxPrint("%");
+        }
       } else {
         if (CursorBlink()) {
           const int x = 18 + 64*((zoom_cursor-1)%2);
@@ -759,13 +779,15 @@ public:
                   break;
                 case 5:
                 case 6:
-                  // TODO: per applet?
+                  // TODO: also edit OutSkip param somehow...
+                  HS::frame.NudgeSlew(zoom_slot*2 + zoom_cursor - 5, event.value);
+                  break;
                 default:
                   isEditing = false;
                   break;
               }
             } else { // enc moves cursor
-              zoom_cursor = constrain(zoom_cursor + event.value, 0, 4);
+              zoom_cursor = constrain(zoom_cursor + event.value, 0, 6);
               ResetCursor();
             }
         } else if (event.mask & (OC::CONTROL_BUTTON_X | OC::CONTROL_BUTTON_Y)) {

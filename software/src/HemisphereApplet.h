@@ -131,8 +131,8 @@ public:
     }
 
     // Buffered I/O functions
-    int ViewIn(int ch) {return frame.inputs[io_offset + ch];}
-    int ViewOut(int ch) {return frame.outputs[io_offset + ch];}
+    int ViewIn(int ch) const {return frame.inputs[io_offset + ch];}
+    int ViewOut(int ch) const {return frame.ViewOut(io_offset + ch);}
     uint32_t ClockCycleTicks(int ch) {
       if (clock_m.IsRunning() && clock_m.GetMultiply(io_offset + ch) != 0)
           return clock_m.GetCycleTicks(io_offset + ch);
@@ -181,11 +181,13 @@ public:
         frame.Out( (DAC_CHANNEL)(ch + io_offset), value + (octave * (12 << 7)));
     }
 
-    void SmoothedOut(int ch, int value, int kSmoothing) {
+    // TODO: rework or delete
+    [[deprecated("SmoothedOut() was a bad idea")]]
+    void SmoothedOut(int ch, int value, int kSmoothing) const {
       if (OC::CORE::ticks % kSmoothing == 0) {
         DAC_CHANNEL channel = (DAC_CHANNEL)(ch + io_offset);
-        value = (frame.outputs_smooth[channel] * (kSmoothing - 1) + value) / kSmoothing;
-        frame.outputs[channel] = frame.outputs_smooth[channel] = value;
+        value = (frame.outputs_target[channel] * (kSmoothing - 1) + value) / kSmoothing;
+        frame.outputs_target[channel] = value;
       }
     }
     void ClockOut(const int ch, const int ticks = HEMISPHERE_CLOCK_TICKS * trig_length) {

@@ -117,7 +117,7 @@ public:
         {
             if (notenames) {
                 // approximate notes being output
-                gfxPrint(2 + w*ch, 55, midi_note_numbers[MIDIQuantizer::NoteNumber(HS::frame.outputs[ch])] );
+                gfxPrint(2 + w*ch, 55, midi_note_numbers[MIDIQuantizer::NoteNumber(HS::frame.ViewOut(ch))] );
             }
 
             // trigger/gate indicators
@@ -131,7 +131,7 @@ public:
             gfxFrame(2 + (w * ch), y, w_, abs(height));
 
             // output
-            height = ProportionCV(HS::frame.outputs[ch], h);
+            height = ProportionCV(HS::frame.ViewOut(ch), h);
             y = constrain(h - height, 0, h);
             gfxInvert(3 + w_ + (w * ch), y, w_, abs(height));
 
@@ -193,8 +193,8 @@ public:
     }
 
     // Buffered I/O functions for use in Views
-    int ViewIn(int ch) {return frame.inputs[ch];}
-    int ViewOut(int ch) {return frame.outputs[ch];}
+    int ViewIn(int ch) const {return frame.inputs[ch];}
+    int ViewOut(int ch) const {return frame.ViewOut(ch);}
     uint32_t ClockCycleTicks(int ch) {return frame.cycle_ticks[ch];}
 
     /* ADC Lag: There is a small delay between when a digital input can be read and when an ADC can be
