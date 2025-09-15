@@ -245,6 +245,9 @@ void FASTRUN loop() {
   OC::CORE::app_loop_enabled = true;
   uint32_t menu_redraws = 0;
   while (true) {
+#ifdef __IMXRT1062__
+    thisUSB.Task();
+#endif
 
     // Refresh display
     if (MENU_REDRAW && OC::CORE::display_update_enabled) {
