@@ -282,6 +282,9 @@ void FASTRUN loop() {
     if (OC::CORE::app_loop_enabled)
       OC::apps::current_app->loop();
 
+    // Take care of queued tasks
+    OC::CORE::FlushTasks();
+
     // UI events
     if (OC::UI_MODE_APP_SETTINGS == ui_mode) {
       if (!OC::ui.AppSettings(false)) {
