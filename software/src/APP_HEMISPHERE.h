@@ -251,7 +251,6 @@ HemispherePreset *hem_active_preset = 0;
 using namespace HS;
 
 void ReceiveManagerSysEx();
-void BeatSyncProcess();
 
 class HemisphereManager : public HSApplication {
 public:
@@ -583,7 +582,10 @@ public:
         PokePopup(PRESET_POPUP);
     }
     void ProcessQueue() {
-      LoadFromPreset(queued_preset);
+      if (queued_preset >= 0) {
+        LoadFromPreset(queued_preset);
+        queued_preset = -1;
+      }
     }
 
     // does not modify the preset, only the manager
@@ -628,7 +630,7 @@ public:
                 if (slot < HEM_NR_OF_PRESETS) {
                   if (HS::clock_m.IsRunning()) {
                     queued_preset = slot;
-                    HS::clock_m.BeatSync( &BeatSyncProcess );
+                    HS::clock_m.BeatSync( [this](){ ProcessQueue(); } );
                   }
                   else
                     LoadFromPreset(slot);
@@ -1124,7 +1126,7 @@ public:
 
 private:
     int preset_id = -1;
-    int queued_preset = 0;
+    int queued_preset = -1;
     int preset_cursor = 0;
     int my_applet[2]; // Indexes to available_applets
     int next_applet[2]; // queued from UI thread, handled by Controller
@@ -1255,7 +1257,7 @@ private:
             else {
               if (HS::clock_m.IsRunning()) {
                 queued_preset = preset_cursor - 1;
-                HS::clock_m.BeatSync( &BeatSyncProcess );
+                HS::clock_m.BeatSync( [this](){ ProcessQueue(); } );
               }
               else
                 LoadFromPreset(preset_cursor-1);
@@ -1564,9 +1566,6 @@ void ReceiveManagerSysEx() {
     if (hem_active_preset)
         hem_active_preset->OnReceiveSysEx();
 #endif
-}
-void BeatSyncProcess() {
-  manager.ProcessQueue();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

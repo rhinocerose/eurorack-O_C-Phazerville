@@ -50,7 +50,6 @@ static constexpr int PRESET_FILE_REVISION = 0;
 using namespace HS;
 
 void QuadrantSysExHandler();
-void QuadrantBeatSync();
 
 class QuadAppletManager : public HSApplication {
 public:
@@ -356,12 +355,15 @@ public:
         PokePopup(PRESET_POPUP);
     }
     void ProcessQueue() {
-      LoadFromPreset(queued_preset);
+      if (queued_preset >= 0) {
+        LoadFromPreset(queued_preset);
+        queued_preset = -1;
+      }
     }
     void QueuePresetLoad(int id) {
       if (HS::clock_m.IsRunning()) {
         queued_preset = id;
-        HS::clock_m.BeatSync( &QuadrantBeatSync );
+        HS::clock_m.BeatSync( [this](){ ProcessQueue(); } );
       }
       else
         LoadFromPreset(id);
@@ -384,6 +386,7 @@ public:
     template <typename T1, typename T2, typename T3>
     void ProcessMIDI(T1 &device, T2 &next_device, T3 &dev3) {
         HS::IOFrame &f = HS::frame;
+        int load_slot = -1;
 
         while (device.read()) {
             const uint8_t message = device.getType();
@@ -397,16 +400,16 @@ public:
 
             if (message == usbMIDI.ProgramChange
             && (device.getChannel() == f.MIDIState.pc_channel || f.MIDIState.pc_channel == f.MIDIState.PC_OMNI)) {
-                uint8_t slot = device.getData1();
-                if (slot < QUAD_PRESET_COUNT) {
-                    QueuePresetLoad(slot);
-                }
+                load_slot = device.getData1();
                 //continue;
             }
 
             f.MIDIState.ProcessMIDIMsg({device.getChannel(), message, data1, data2});
             next_device.send(message, data1, data2, device.getChannel(), 0);
             dev3.send((midi::MidiType)message, data1, data2, device.getChannel());
+        }
+        if (load_slot >= 0 && load_slot < QUAD_PRESET_COUNT) {
+            QueuePresetLoad(load_slot);
         }
     }
 
@@ -970,7 +973,7 @@ private:
     char bank_filename[16] = "BANK_000.DAT";
     uint8_t bank_num = 0;
     int preset_id = -1;
-    int queued_preset = 0;
+    int queued_preset = -1;
     int preset_cursor = 0;
     HemisphereApplet *active_applet[4]; // Pointers to actual applets
     int active_applet_index[4]; // Indexes to available_applets
@@ -1422,9 +1425,6 @@ QuadAppletManager quad_manager;
 
 void QuadrantSysExHandler() {
   // TODO
-}
-void QuadrantBeatSync() {
-  quad_manager.ProcessQueue();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
