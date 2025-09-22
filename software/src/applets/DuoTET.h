@@ -127,6 +127,10 @@ public:
         params[DUOTET_PARAM_Al]         = -63;
         genScale();
     }
+    void Unload() {
+      continuous[0] = true;
+      continuous[1] = true;
+    }
 
     bool cv2note(int16_t& pitch, int cv=0, bool forceUpdate = false, int threshold=8) {
         cv = cv+64;
