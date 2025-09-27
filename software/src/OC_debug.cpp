@@ -12,12 +12,15 @@
 #include "util/util_math.h"
 #include "util/util_misc.h"
 #include "extern/dspinst.h"
+#include <malloc.h>
 
 #ifdef ARDUINO_TEENSY41
 #include <Audio.h>
 
 extern "C" uint8_t external_psram_size;
+extern char _extram_start[], _extram_end[];
 #endif
+extern char _ebss[], _heap_end[], *__brkval, _estack;
 
 #ifdef POLYLFO_DEBUG  
 extern void POLYLFO_debug();
@@ -62,6 +65,36 @@ namespace DEBUG {
     DebugPins::Init();
   }
 }; // namespace DEBUG
+
+static void debug_menu_ram() {
+
+#ifdef __IMXRT1062__
+  auto sp = (char*) __builtin_frame_address(0);
+  auto stack = sp - _ebss;
+  int heap = OC::CORE::FreeRam(); // _heap_end - __brkval;
+#else
+  // T3.2
+  char tos;
+  int stack = &_estack - &tos;
+  int heap = mallinfo().uordblks;
+  int free = mallinfo().fordblks + (&tos - __brkval);
+
+  graphics.setPrintPos(2, 32);
+  graphics.printf("FREE  %7d (%dKB)", free, free >> 10);
+#endif
+
+  graphics.setPrintPos(2, 12);
+  graphics.printf("STACK %7d (%dKB)", stack, stack >> 10);
+
+  graphics.setPrintPos(2, 22);
+  graphics.printf("HEAP  %7d (%dKB)", heap, heap >> 10);
+
+#if ARDUINO_TEENSY41
+  auto psram = _extram_start + (external_psram_size << 20) - _extram_end;
+  graphics.setPrintPos(2, 32);
+  graphics.printf("PSRAM %7d (%dKB)", psram, psram >> 10);
+#endif
+}
 
 static void debug_menu_core() {
 
@@ -218,6 +251,7 @@ struct DebugMenu {
 
 static const DebugMenu debug_menus[] = {
   { " CORE", debug_menu_core },
+  { " RAM", debug_menu_ram },
   { " VERS", debug_menu_version },
   { " GFX", debug_menu_gfx },
   { " ADC (raw)", debug_menu_adc },

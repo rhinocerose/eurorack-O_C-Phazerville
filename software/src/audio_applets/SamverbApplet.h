@@ -15,7 +15,10 @@ class BungverbApplet : public HemisphereAudioApplet {
             return "Bungverb";
         }
         void Start() override {
-            if (!reverb) reverb = new AudioEffectReverbSchroeder();
+            if (!reverb && OC::CORE::FreeRam() > sizeof(AudioEffectReverbSchroeder)) {
+              reverb = new AudioEffectReverbSchroeder();
+            }
+            if (!reverb) return;
             filter.frequency(15000);
             PatchCable(input, 0, *reverb, 0);
             PatchCable(*reverb, 0, filter, 0);
@@ -38,6 +41,10 @@ class BungverbApplet : public HemisphereAudioApplet {
         }
 
         void View() override {
+            if (!reverb) {
+              gfxPrint(1, 15, "Out Of RAM !!!");
+              return;
+            };
             gfxPrint(1, 15, "T: ");
             gfxStartCursor();
             graphics.printf("%d.%1ds", SPLIT_INT_DEC(decay_time, 10));

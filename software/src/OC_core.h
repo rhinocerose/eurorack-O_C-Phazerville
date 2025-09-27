@@ -21,6 +21,7 @@ namespace OC {
 
     void DeferTask(std::function<void()> func);
     void FlushTasks();
+    int FreeRam();
   }; // namespace CORE
 
   struct TickCount {
