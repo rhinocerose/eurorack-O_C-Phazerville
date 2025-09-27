@@ -14,7 +14,7 @@ class ReverbApplet : public HemisphereAudioApplet {
             return "Reverb";
         }
         void Start() override {
-            if (!reverb && OC::CORE::FreeRam() > sizeof(AudioEffectFreeverb)) {
+            if (!reverb && OC::CORE::FreeRam() > (int)sizeof(AudioEffectFreeverb)) {
               reverb = new AudioEffectFreeverb();
             }
             PatchCable(input, 0, dry_wet_mixer, 1);

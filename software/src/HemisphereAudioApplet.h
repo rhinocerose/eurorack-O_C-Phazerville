@@ -83,7 +83,7 @@ public:
   }
 
   void Disconnect() {
-    for (int i = 0; i < cable_count; ++i) {
+    for (size_t i = 0; i < cable_count; ++i) {
       cables[i].disconnect();
     }
     cable_count = 0;

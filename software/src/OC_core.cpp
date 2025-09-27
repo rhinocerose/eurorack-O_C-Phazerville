@@ -2,7 +2,7 @@
 
 extern char _heap_end[], *__brkval;
 
-volatile std::vector<std::function<void()>> fn_queue;
+/*volatile*/ std::vector<std::function<void()>> fn_queue;
 
 void OC::CORE::DeferTask(std::function<void()> func) {
   fn_queue.push_back(func);

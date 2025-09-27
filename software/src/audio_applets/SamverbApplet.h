@@ -15,7 +15,7 @@ class BungverbApplet : public HemisphereAudioApplet {
             return "Bungverb";
         }
         void Start() override {
-            if (!reverb && OC::CORE::FreeRam() > sizeof(AudioEffectReverbSchroeder)) {
+            if (!reverb && OC::CORE::FreeRam() > (int)sizeof(AudioEffectReverbSchroeder)) {
               reverb = new AudioEffectReverbSchroeder();
             }
             PatchCable(input, 0, dry_wet_mixer, 1);
