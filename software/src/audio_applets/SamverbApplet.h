@@ -18,24 +18,27 @@ class BungverbApplet : public HemisphereAudioApplet {
             if (!reverb && OC::CORE::FreeRam() > sizeof(AudioEffectReverbSchroeder)) {
               reverb = new AudioEffectReverbSchroeder();
             }
+            PatchCable(input, 0, dry_wet_mixer, 1);
             if (!reverb) return;
             filter.frequency(15000);
             PatchCable(input, 0, *reverb, 0);
             PatchCable(*reverb, 0, filter, 0);
             PatchCable(filter, 0, dry_wet_mixer, 0);
-            PatchCable(input, 0, dry_wet_mixer, 1);
         }
 
         void Controller() override {
           if (reverb) {
             reverb->setDecayTime(decay_time + decay_time_cv.InF() * 0.01f);
             reverb->setDamping((damp * 0.01f) + damp_cv.InF() * 0.01f);
+          } else {
+            dry_wet_mixer.gain(1, 1.0f);
+            return;
           }
 
             filter.frequency(cutoff);
 
             float m = constrain(static_cast<float>(mix) * 0.01f + mix_cv.InF(), 0.0f, 1.0f);
-           
+
             dry_wet_mixer.gain(0, m);
             dry_wet_mixer.gain(1, 1.0f - m);
         }
@@ -176,7 +179,7 @@ class BungverbApplet : public HemisphereAudioApplet {
 
         AudioMixer<2> dry_wet_mixer;
 
-        int8_t mix = 100;
+        int8_t mix = 50;
         float decay_time = 1.0f;
         int8_t damp = 50;
         int16_t cutoff = 15000;

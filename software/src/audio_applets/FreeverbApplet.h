@@ -17,11 +17,11 @@ class ReverbApplet : public HemisphereAudioApplet {
             if (!reverb && OC::CORE::FreeRam() > sizeof(AudioEffectFreeverb)) {
               reverb = new AudioEffectFreeverb();
             }
+            PatchCable(input, 0, dry_wet_mixer, 1);
             if (!reverb) return;
             PatchCable(input, 0, *reverb, 0);
             PatchCable(*reverb, 0, filter, 0);
             PatchCable(filter, 0, dry_wet_mixer, 0);
-            PatchCable(input, 0, dry_wet_mixer, 1);
             filter.frequency(15000);
         }
 
@@ -29,12 +29,15 @@ class ReverbApplet : public HemisphereAudioApplet {
           if (reverb) {
             reverb->roomsize((size * 0.01f) + size_cv.InF() * 0.01f);
             reverb->damping((damp * 0.01f) + damp_cv.InF() * 0.01f);
+          } else {
+            dry_wet_mixer.gain(1, 1.0f);
+            return;
           }
 
             filter.frequency(cutoff);
 
             float m = constrain(static_cast<float>(mix) * 0.01f + mix_cv.InF(), 0.0f, 1.0f);
-           
+
             dry_wet_mixer.gain(0, m);
             dry_wet_mixer.gain(1, 1.0f - m);
         }
@@ -173,7 +176,7 @@ class ReverbApplet : public HemisphereAudioApplet {
 
         AudioMixer<2> dry_wet_mixer;
 
-        int8_t mix = 100;
+        int8_t mix = 50;
         int8_t size = 50;
         int8_t damp = 50;
         int16_t cutoff = 15000;
