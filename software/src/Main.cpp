@@ -49,7 +49,7 @@
 
 USBHost thisUSB;
 USBHub hub1(thisUSB);
-MIDIDevice usbHostMIDI(thisUSB);
+MIDIDevice_BigBuffer usbHostMIDI(thisUSB);
 
 #if defined(ARDUINO_TEENSY41)
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial8, MIDI1);
