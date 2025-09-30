@@ -2,16 +2,25 @@
 
 extern char _heap_end[], *__brkval;
 
-/*volatile*/ std::vector<std::function<void()>> fn_queue;
+/*volatile*/ std::queue<Task> fn_queue;
+//volatile bool fn_queue_lock = false;
 
-void OC::CORE::DeferTask(std::function<void()> func) {
-  fn_queue.push_back(func);
+void OC::CORE::DeferTask(Task func) {
+  // This simply ignores Tasks from the ISR while flushing...
+  // Hopefully that's more like debouncing or frame drops and not missed clocks...
+  //if (!fn_queue_lock) // oh no!
+  fn_queue.emplace(func);
 }
 void OC::CORE::FlushTasks() {
-  for (auto &&func : fn_queue) {
-    func();
+  if (fn_queue.empty()) return;
+  //noInterrupts();
+  //fn_queue_lock = true;
+  while (!fn_queue.empty()) {
+    fn_queue.front()();
+    fn_queue.pop();
   }
-  fn_queue.clear();
+  //interrupts();
+  //fn_queue_lock = false;
 }
 
 int OC::CORE::FreeRam() {

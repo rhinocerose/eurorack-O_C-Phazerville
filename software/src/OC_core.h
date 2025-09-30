@@ -10,7 +10,9 @@
 #include "util/util_debugpins.h"
 #include "src/drivers/display.h"
 #include <functional>
-#include <vector>
+#include <queue>
+
+using Task = std::function<void()>;
 
 namespace OC {
   namespace CORE {
@@ -19,7 +21,7 @@ namespace OC {
     extern volatile bool display_update_enabled;
     extern volatile bool app_loop_enabled;
 
-    void DeferTask(std::function<void()> func);
+    void DeferTask(Task func);
     void FlushTasks();
     int FreeRam();
   }; // namespace CORE

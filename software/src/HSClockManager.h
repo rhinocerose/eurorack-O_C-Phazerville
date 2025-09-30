@@ -81,7 +81,7 @@ public:
 
     bool boop[8] = {0,0,0,0,0,0,0,0}; // Manual triggers
 
-    std::vector<std::function<void()>> syncfn_queue;
+    std::queue<Task> syncfn_queue;
 
     ClockManager() {
         SetTempoBPM(120);
@@ -143,15 +143,16 @@ public:
 
     void BeatSync(std::function<void()> func) {
       // TODO: prevent duplicates...
-      syncfn_queue.push_back(func);
+      syncfn_queue.emplace(func);
     }
     void ProcessBeatSync() {
+      if (syncfn_queue.empty()) return;
       // Things that should only happen on the downbeat
       // such as: preset load, multiplier change, etc...
-      for (auto &&func : syncfn_queue) {
-        func();
+      while (!syncfn_queue.empty()) {
+        syncfn_queue.front()();
+        syncfn_queue.pop();
       }
-      syncfn_queue.clear();
     }
 
     // Reset - Resync multipliers, optionally skipping the first tock
@@ -225,7 +226,8 @@ public:
 
         }
         if (reset) Reset(1); // skip the one we're already on
-        if (beatsync) OC::CORE::DeferTask([this](){ ProcessBeatSync(); });
+        if (beatsync && !syncfn_queue.empty())
+          OC::CORE::DeferTask([this](){ ProcessBeatSync(); });
 
         // handle syncing to physical clocks
         if (clocked && clock_tick[tickno] && ppqn) {
