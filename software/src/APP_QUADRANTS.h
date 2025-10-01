@@ -22,6 +22,7 @@
 #pragma once
 
 #include "OC_DAC.h"
+#include "OC_core.h"
 #include "OC_digital_inputs.h"
 #include "OC_visualfx.h"
 #include "OC_apps.h"
@@ -400,7 +401,7 @@ public:
         HS::IOFrame &f = HS::frame;
         int load_slot = -1;
 
-        while (device.read()) {
+        while (timeout < 40 && device.read()) {
             const uint8_t message = device.getType();
             const uint8_t data1 = device.getData1();
             const uint8_t data2 = device.getData2();
@@ -426,6 +427,7 @@ public:
     }
 
     void Controller() {
+        timeout = 0;
         // top-level MIDI-to-CV handling - alters frame outputs
         ProcessMIDI(usbMIDI, usbHostMIDI, MIDI1);
         ProcessMIDI(usbHostMIDI, usbMIDI, MIDI1);
@@ -1018,6 +1020,8 @@ private:
     // state has actually changed between events to register a combo.
     uint16_t mask = 0;
     uint16_t last_mask = 0;
+
+    elapsedMicros timeout = 0;
 
     // State machine
     enum QuadrantsView {
