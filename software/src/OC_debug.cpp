@@ -9,6 +9,7 @@
 #include "OC_menus.h"
 #include "OC_ui.h"
 #include "OC_strings.h"
+#include "OC_apps.h"
 #include "util/util_math.h"
 #include "util/util_misc.h"
 #include "extern/dspinst.h"
@@ -53,6 +54,7 @@ extern void ASR_debug();
 namespace OC {
 
 namespace DEBUG {
+  debug::AveragedCycles LOOP_cycles;
   debug::AveragedCycles ISR_cycles;
   debug::AveragedCycles UI_cycles;
   debug::AveragedCycles MENU_draw_cycles;
@@ -97,11 +99,12 @@ static void debug_menu_ram() {
 }
 
 static void debug_menu_core() {
-
-  graphics.setPrintPos(2, 12);
+  int y = 12;
+  graphics.setPrintPos(2, y);
   graphics.printf("%uMHz %luus+%luus", F_CPU / 1000 / 1000, OC_CORE_TIMER_RATE, OC_UI_TIMER_RATE);
-  
-  graphics.setPrintPos(2, 22);
+
+  y += 10;
+  graphics.setPrintPos(2, y);
   uint32_t isr_us = debug::cycles_to_us(DEBUG::ISR_cycles.value());
   graphics.printf("CORE%3lu/%3lu/%3lu %2lu%%",
                   debug::cycles_to_us(DEBUG::ISR_cycles.min_value()),
@@ -109,17 +112,25 @@ static void debug_menu_core() {
                   debug::cycles_to_us(DEBUG::ISR_cycles.max_value()),
                   (isr_us * 100) /  OC_CORE_TIMER_RATE);
 
-  graphics.setPrintPos(2, 32);
+  y += 10;
+  graphics.setPrintPos(2, y);
   graphics.printf("POLL%3lu/%3lu/%3lu",
                   debug::cycles_to_us(DEBUG::UI_cycles.min_value()),
                   debug::cycles_to_us(DEBUG::UI_cycles.value()),
                   debug::cycles_to_us(DEBUG::UI_cycles.max_value()));
 
 #ifdef OC_UI_DEBUG
-  graphics.setPrintPos(2, 42);
+  y += 10;
+  graphics.setPrintPos(2, y);
   graphics.printf("UI   !%lu #%lu", DEBUG::UI_queue_overflow, DEBUG::UI_event_count);
-  graphics.setPrintPos(2, 52);
 #endif
+
+  y += 10;
+  graphics.setPrintPos(2, y);
+  graphics.printf("LOOP%3lu/%3lu/%3lu",
+                  debug::cycles_to_us(DEBUG::LOOP_cycles.min_value()),
+                  debug::cycles_to_us(DEBUG::LOOP_cycles.value()),
+                  debug::cycles_to_us(DEBUG::LOOP_cycles.max_value()));
 }
 
 static void debug_menu_version()
@@ -290,7 +301,15 @@ void Ui::DebugStats() {
 
   int current_menu_index = 0;
   bool exit_loop = false;
+  uint32_t loopcount = 0;
   while (!exit_loop) {
+    OC_DEBUG_PROFILE_SCOPE(OC::DEBUG::LOOP_cycles);
+    // Run current app
+    if (OC::CORE::app_loop_enabled)
+      OC::apps::current_app->loop();
+
+    OC::CORE::FlushTasks();
+
     const auto &current_menu = debug_menus[current_menu_index];
 
     GRAPHICS_BEGIN_FRAME(false);
@@ -312,7 +331,10 @@ void Ui::DebugStats() {
       }
     }
     CONSTRAIN(current_menu_index, 0, (int)ARRAY_SIZE(debug_menus) - 1);
-    delay(1);
+
+    ++loopcount;
+    OC_DEBUG_RESET_CYCLES(loopcount, 0x1000000, OC::DEBUG::LOOP_cycles);
+    //delay(1);
   }
 
   event_queue_.Flush();
