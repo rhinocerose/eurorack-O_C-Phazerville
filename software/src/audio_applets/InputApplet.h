@@ -20,28 +20,32 @@ public:
   void Start() override {
     if (MONO == Channels) {
       mono_mode = hemisphere;
-      PatchCable(OC::AudioIO::InputStream(), 0, mixer[0], 0);
-      PatchCable(OC::AudioIO::InputStream(), 1, mixer[0], 1);
-      PatchCable(input, 0, mixer[0], 2);
-
-      PatchCable(mixer[0], 0, output, 0);
-
-      PatchCable(OC::AudioIO::InputStream(), 0, peakmeter[0], 0);
-
-      mixer[0].gain(2, 1.0); // passthru
-    } else {
-      for (int i = 0; i < Channels; ++i) {
-        PatchCable(OC::AudioIO::InputStream(), i, mixer[i], 0);
-        PatchCable(OC::AudioIO::InputStream(), i, mixer[1 - i], 1);
-        PatchCable(input, i, mixer[i], 2);
-
-        PatchCable(mixer[i], 0, output, i);
-
-        PatchCable(OC::AudioIO::InputStream(), i, peakmeter[i], 0);
-
-        mixer[i].gain(2, 1.0); // passthru
-      }
     }
+
+    for (int i = 0; i < Channels; ++i) {
+      ForEachChannel(ch) {
+        attenuations[i*2 + ch].Method(INTERPOLATION_LINEAR);
+        attenuations[i*2 + ch].Acquire();
+
+        PatchCable(OC::AudioIO::InputStream(), ch, vcas[i*2 + ch], 0);
+        PatchCable(attenuations[i*2 + ch], 0, vcas[i*2 + ch], 1);
+        PatchCable(vcas[i*2 + ch], 0, mixer[i], ch);
+      }
+      PatchCable(passthru, i, mixer[i], 2);
+      PatchCable(mixer[i], 0, output, i);
+
+      PatchCable(OC::AudioIO::InputStream(), i, peakmeter[i], 0);
+
+      mixer[i].gain(0, 1.0); // Left
+      mixer[i].gain(1, 1.0); // Right
+      mixer[i].gain(2, 1.0); // passthru
+    }
+  }
+  void Unload() override {
+    for (int i = 0; i < Channels; ++i) {
+      ForEachChannel(ch) attenuations[i*2 + ch].Release();
+    }
+    AllowRestart();
   }
   void Controller() override {
     UpdateMix();
@@ -114,7 +118,7 @@ public:
   }
 
   AudioStream* InputStream() override {
-    return &input;
+    return &passthru;
   }
   AudioStream* OutputStream() override {
     return &output;
@@ -122,19 +126,21 @@ public:
 
   void UpdateMix() {
     float lvl_scalar = level < LVL_MIN_DB ? 0.0f : dbToScalar(level) * level_cv.InF(1.0f);
+    q15_t lvl = float_to_q15(lvl_scalar);
+
     if (Channels == MONO) {
       if (mono_mode == MIXED) {
-        mixer[0].gain(0, lvl_scalar);
-        mixer[0].gain(1, lvl_scalar);
+        attenuations[0].Push(lvl);
+        attenuations[1].Push(lvl);
       } else {
-        mixer[0].gain(mono_mode, lvl_scalar);
-        mixer[0].gain(1 - mono_mode, 0.0);
+        attenuations[mono_mode].Push(lvl);
+        attenuations[1-mono_mode].Push(0.0);
       }
     } else {
-      mixer[0].gain(0, lvl_scalar);
-      mixer[0].gain(1, mixtomono ? lvl_scalar : 0.0);
-      mixer[1].gain(0, lvl_scalar);
-      mixer[1].gain(1, mixtomono ? lvl_scalar : 0.0);
+      attenuations[0].Push(lvl); // left to left
+      attenuations[1].Push(mixtomono? lvl : 0.0); // right to left
+      attenuations[2].Push(mixtomono? lvl : 0.0); // left to right
+      attenuations[3].Push(lvl); // right to right
     }
   }
 
@@ -142,7 +148,9 @@ protected:
   void SetHelp() override {}
 
 private:
-  AudioPassthrough<Channels> input;
+  AudioPassthrough<Channels> passthru;
+  std::array<InterpolatingStream<>, Channels*2> attenuations;
+  std::array<AudioVCA, Channels*2> vcas;
   AudioMixer<3> mixer[Channels];
   AudioPassthrough<Channels> output;
 
