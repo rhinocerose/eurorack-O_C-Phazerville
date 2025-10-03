@@ -27,15 +27,17 @@ class BungverbApplet : public HemisphereAudioApplet {
         }
 
         void Controller() override {
-          if (reverb) {
-            reverb->setDecayTime(decay_time + decay_time_cv.InF() * 0.01f);
-            reverb->setDamping((damp * 0.01f) + damp_cv.InF() * 0.01f);
-          } else {
-            dry_wet_mixer.gain(1, 1.0f);
-            return;
-          }
+            if (reverb) {
+              reverb->setDecayTime(decay_time + decay_time_cv.InF());
+              reverb->setDamping(1.0f - ((damp * 0.01f) + damp_cv.InF()));
+            } else {
+              dry_wet_mixer.gain(1, 1.0f);
+              return;
+            }
 
-            filter.frequency(cutoff);
+            float freq = constrain(static_cast<float>(cutoff)
+              + (cutoff_cv.InF() * abs(cutoff_cv.InF()) * 18000.0), 10.0f, 20000.0);
+            filter.frequency(freq);
 
             float m = constrain(static_cast<float>(mix) * 0.01f + mix_cv.InF(), 0.0f, 1.0f);
 
