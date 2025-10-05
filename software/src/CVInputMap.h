@@ -35,7 +35,7 @@ struct CVInputMap {
   float InF(float default_value = 0.0f) {
     if (!source) return default_value;
     return 0.001f * Atten() * static_cast<float>(RawIn())
-      / static_cast<float>(HEMISPHERE_MAX_INPUT_CV);
+      / static_cast<float>((source <= ADC_CHANNEL_LAST)?HEMISPHERE_MAX_INPUT_CV:HEMISPHERE_MAX_CV);
   }
 
   int SemitoneIn(int default_value = 0) {
@@ -43,7 +43,7 @@ struct CVInputMap {
   }
 
   int InRescaled(int max_value) {
-    return Proportion(In(), HEMISPHERE_MAX_INPUT_CV, max_value);
+    return Proportion(In(), (source <= ADC_CHANNEL_LAST)?HEMISPHERE_MAX_INPUT_CV:HEMISPHERE_MAX_CV, max_value);
   }
 
   void ChangeSource(int dir) {
