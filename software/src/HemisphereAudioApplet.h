@@ -118,7 +118,7 @@ public:
   }
 
   void gfxPrintDb(int db) {
-    if (db < LVL_MIN_DB) gfxPrint("    - ");
+    if (db < LVL_MIN_DB) gfxPrint("   - ");
     else graphics.printf("%3ddB", db);
   }
 };
