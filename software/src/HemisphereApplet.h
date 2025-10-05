@@ -68,15 +68,15 @@ using namespace HS;
 
 class HemisphereApplet {
 public:
-    static int cursor_countdown[APPLET_SLOTS + 1];
+    static int cursor_countdown[APPLET_CURSOR_COUNT];
     static int16_t cursor_start_x;
     static int16_t cursor_start_y;
     static const char* help[HELP_LABEL_COUNT];
-    static EncoderEditor enc_edit[APPLET_SLOTS + 1];
+    static EncoderEditor enc_edit[APPLET_CURSOR_COUNT];
 
     static void ProcessCursors() {
       // Cursor countdowns. See CursorBlink(), ResetCursor(), gfxCursor()
-      for (int i = 0; i < APPLET_SLOTS + 1; ++i) {
+      for (int i = 0; i < APPLET_CURSOR_COUNT; ++i) {
         if (--cursor_countdown[i] < -HEMISPHERE_CURSOR_TICKS)
           cursor_countdown[i] = HEMISPHERE_CURSOR_TICKS;
       }

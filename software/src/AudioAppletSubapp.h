@@ -108,10 +108,9 @@ public:
     }
 
     ForEachSide(side) {
-      HEM_SIDE s = static_cast<HEM_SIDE>(side);
       if (state[side] == EDIT_APPLET) {
-        HemisphereApplet& applet = get_selected_applet(s);
-        applet.SetDisplaySide(s);
+        HemisphereApplet& applet = get_selected_applet(side);
+        applet.SetDisplaySide(static_cast<HEM_SIDE>(side + AUDIO_SLOT_L));
         applet.BaseView();
       } else {
         int y = cursor[side] * 10 + 14;
@@ -124,7 +123,7 @@ public:
           gfxIcon(120 * side, y + 1, side ? LEFT_ICON : RIGHT_ICON);
         }
         for (uint_fast8_t slot = 0; slot < Slots + 1; slot++) {
-          draw_peak(s, slot);
+          draw_peak(side, slot);
         }
 
         gfxPos(1 + 64 * side, 2);
