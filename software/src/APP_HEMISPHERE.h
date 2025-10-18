@@ -1112,8 +1112,10 @@ public:
                 HS::NudgeOctave(HS::qview, 1);
               else if (event.control == OC::CONTROL_BUTTON_B)
                 HS::NudgeOctave(HS::qview, -1);
-              else
-                HS::q_edit = false;
+              else {
+                HS::q_edit = 0;
+                HS::popup_tick = 0;
+              }
 
               OC::ui.SetButtonIgnoreMask();
               break;
