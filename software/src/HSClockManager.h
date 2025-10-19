@@ -227,7 +227,7 @@ public:
         }
         if (reset) Reset(1); // skip the one we're already on
         if (beatsync && !syncfn_queue.empty())
-          OC::CORE::DeferTask([this](){ ProcessBeatSync(); });
+          ProcessBeatSync();
 
         // handle syncing to physical clocks
         if (clocked && clock_tick[tickno] && ppqn) {
