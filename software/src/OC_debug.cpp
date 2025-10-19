@@ -92,9 +92,12 @@ static void debug_menu_ram() {
   graphics.printf("HEAP  %7d (%dKB)", heap, heap >> 10);
 
 #if ARDUINO_TEENSY41
-  auto psram = _extram_start + (external_psram_size << 20) - _extram_end;
+  char *derp = extmem_malloc(1);
+  //auto psram = _extram_start + (external_psram_size << 20) - _extram_end;
+  auto psram = _extram_start + (external_psram_size << 20) - derp;
   graphics.setPrintPos(2, 32);
   graphics.printf("PSRAM %7d (%dKB)", psram, psram >> 10);
+  extmem_free(derp);
 #endif
 }
 
@@ -262,7 +265,11 @@ struct DebugMenu {
 
 static const DebugMenu debug_menus[] = {
   { " CORE", debug_menu_core },
+#ifdef __IMXRT1062__
+  { " RAM (free)", debug_menu_ram },
+#else
   { " RAM", debug_menu_ram },
+#endif
   { " VERS", debug_menu_version },
   { " GFX", debug_menu_gfx },
   { " ADC (raw)", debug_menu_adc },

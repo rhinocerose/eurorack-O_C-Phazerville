@@ -32,7 +32,7 @@ bool DAC_20Vpp = false;
 #endif
 
 float OC::GetIDVoltage() {
-  return id_voltage;
+  return OC::ADC::Read_ID_Voltage();
 }
 
 FLASHMEM
